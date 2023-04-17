@@ -14,15 +14,15 @@ jobs:
       - name: Run tests using tox
         run: tox -e lint
 
-    static-analysis:
-      name: Static analysis
-      runs-on: ubuntu-22.04
-      steps:
-        - uses: actions/checkout@v2
-        - name: Install tox
-          run: pip install tox
-        - name: Run tests using tox
-          run: tox -e static
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install tox
+        run: pip install tox
+      - name: Run tests using tox
+        run: tox -e static
 
   unit-tests-with-coverage:
     name: Unit tests
@@ -92,6 +92,6 @@ jobs:
       - name: Upload charm to Charmhub
         uses: canonical/charming-actions/upload-charm@2.2.2
         with:
-          credentials: "${{ secrets.CHARMHUB_TOKEN }}"
+          credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           channel: "${{ steps.channel.outputs.name }}"
