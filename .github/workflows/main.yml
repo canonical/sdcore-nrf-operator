@@ -8,7 +8,7 @@ jobs:
     name: Lint report
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install tox
         run: pip install tox
       - name: Run tests using tox
@@ -18,7 +18,7 @@ jobs:
     name: Static analysis
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install tox
         run: pip install tox
       - name: Run tests using tox
@@ -28,7 +28,7 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install tox
         run: pip install tox
       - name: Run tests using tox
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup LXD
         uses: canonical/setup-lxd@main
         with:
@@ -77,7 +77,7 @@ jobs:
     if: ${{ github.ref_name == 'main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install charmcraft
         run: sudo snap install charmcraft --classic
       - name: Fetch Tested Charm
@@ -87,10 +87,10 @@ jobs:
       - name: Move charm in current directory
         run: find ./ -name charmed-5g-nrf_ubuntu-22.04-amd64.charm -exec mv -t ./ {} \;
       - name: Select Charmhub channel
-        uses: canonical/charming-actions/channel@2.2.2
+        uses: canonical/charming-actions/channel@2.2.5
         id: channel
       - name: Upload charm to Charmhub
-        uses: canonical/charming-actions/upload-charm@2.2.2
+        uses: canonical/charming-actions/upload-charm@2.2.5
         with:
           credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
