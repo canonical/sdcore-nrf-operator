@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 BASE_CONFIG_PATH = "/etc/nrf"
 CONFIG_FILE_NAME = "nrfcfg.yaml"
 DATABASE_NAME = "free5gc"
+NRF_SBI_PORT = 29510
 
 
 class NRFOperatorCharm(CharmBase):
@@ -44,7 +45,7 @@ class NRFOperatorCharm(CharmBase):
         self._service_patcher = KubernetesServicePatch(
             charm=self,
             ports=[
-                ServicePort(name="sbi", port=29510),
+                ServicePort(name="sbi", port=NRF_SBI_PORT),
             ],
         )
 
@@ -65,6 +66,7 @@ class NRFOperatorCharm(CharmBase):
         content = template.render(
             database_name=DATABASE_NAME,
             database_url=database_url,
+            nrf_sbi_port=NRF_SBI_PORT,
         )
         self._container.push(path=f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}", source=content)
         logger.info(f"Pushed {CONFIG_FILE_NAME} config file")

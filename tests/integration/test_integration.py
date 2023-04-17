@@ -53,7 +53,7 @@ async def test_given_charm_is_built_when_deployed_then_status_is_blocked(
 
 
 async def test_given_charm_is_deployed_when_relate_to_mongo_then_status_is_active(
-    ops_test, setup, build_and_deploy
+    ops_test, build_and_deploy
 ):
     await ops_test.model.add_relation(
         relation1=f"{APP_NAME}:database", relation2=f"{DB_APPLICATION_NAME}:database"

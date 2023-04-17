@@ -36,7 +36,7 @@ jobs:
         uses: canonical/charming-actions/release-charm@2.2.0
         with:
           base-channel: 22.04
-          credentials: ${{ secrets.CHARMHUB_TOKEN }}
+          credentials: ${{ secrets.CHARMCRAFT_AUTH }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           destination-channel: latest/${{ env.promote-to }}
           origin-channel: latest/${{ env.promote-from }}
