@@ -1,0 +1,30 @@
+name: charmed-5g-nrf
+display-name: Charmed 5G NRF
+summary: Charmed Operator for Charmed 5G's Network Repository Function (NRF).
+description: Charmed Operator for Charmed 5G's Network Repository Function (NRF).
+
+containers:
+  nrf:
+    resource: nrf-image
+    mounts:
+      - storage: config
+        location: /etc/nrf/
+
+resources:
+  nrf-image:
+    type: oci-image
+    description: OCI image for 5G nrf
+    upstream-source: omecproject/5gc-nrf:master-b747b98
+
+storage:
+  config:
+    type: filesystem
+    minimum-size: 1M
+
+requires:
+  database:
+    interface: mongodb_client
+
+provides:
+  nrf:
+    interface: nrf
