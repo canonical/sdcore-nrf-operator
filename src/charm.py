@@ -61,6 +61,11 @@ class NRFOperatorCharm(CharmBase):
         self._configure_pebble_layer(event)
 
     def _write_config_file(self, database_url: str) -> None:
+        """Writes config file to workload.
+
+        Args:
+            database_url: Database URL
+        """
         jinja2_environment = Environment(loader=FileSystemLoader("src/templates/"))
         template = jinja2_environment.get_template("nrfcfg.yaml.j2")
         content = template.render(
@@ -83,7 +88,11 @@ class NRFOperatorCharm(CharmBase):
     def _configure_pebble_layer(
         self, event: Union[PebbleReadyEvent, RelationCreatedEvent, DatabaseCreatedEvent]
     ) -> None:
-        """Handle Pebble ready event."""
+        """Adds pebble layer and manages Juju unit status.
+
+        Args:
+            event: Juju event
+        """
         if not self._database_relation_is_created:
             self.unit.status = BlockedStatus("Waiting for database relation to be created")
             return
