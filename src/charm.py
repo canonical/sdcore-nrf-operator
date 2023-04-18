@@ -109,6 +109,7 @@ class NRFOperatorCharm(CharmBase):
 
     @property
     def _database_relation_is_created(self) -> bool:
+        """Returns whether database relation is created."""
         return self._relation_created("database")
 
     def _relation_created(self, relation_name: str) -> bool:
@@ -148,6 +149,7 @@ class NRFOperatorCharm(CharmBase):
 
     @property
     def _environment_variables(self) -> dict:
+        """Returns workload service environment variables."""
         return {
             "GRPC_GO_LOG_VERBOSITY_LEVEL": "99",
             "GRPC_GO_LOG_SEVERITY_LEVEL": "info",
