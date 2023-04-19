@@ -16,7 +16,7 @@ from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ign
 )
 from jinja2 import Environment, FileSystemLoader
 from lightkube.models.core_v1 import ServicePort
-from ops.charm import CharmBase, PebbleReadyEvent, RelationCreatedEvent
+from ops.charm import CharmBase, PebbleReadyEvent, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.pebble import Layer
@@ -50,7 +50,11 @@ class NRFOperatorCharm(CharmBase):
         )
 
     def _on_database_created(self, event: DatabaseCreatedEvent) -> None:
-        """Handle database created event."""
+        """Handle database created event.
+
+        Args:
+            event: DatabaseCreatedEvent
+        """
         if not self._container.can_connect():
             self.unit.status = WaitingStatus("Waiting for container to be ready")
             event.defer()
@@ -78,7 +82,11 @@ class NRFOperatorCharm(CharmBase):
 
     @property
     def _config_file_is_written(self) -> bool:
-        """Returns whether the config file was written to the workload container."""
+        """Returns whether the config file was written to the workload container.
+
+        Returns:
+            bool: Whether the config file was written.
+        """
         if not self._container.exists(f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}"):
             logger.info(f"Config file is not written: {CONFIG_FILE_NAME}")
             return False
@@ -86,7 +94,7 @@ class NRFOperatorCharm(CharmBase):
         return True
 
     def _configure_pebble_layer(
-        self, event: Union[PebbleReadyEvent, RelationCreatedEvent, DatabaseCreatedEvent]
+        self, event: Union[PebbleReadyEvent, RelationJoinedEvent, DatabaseCreatedEvent]
     ) -> None:
         """Adds pebble layer and manages Juju unit status.
 
@@ -109,7 +117,11 @@ class NRFOperatorCharm(CharmBase):
 
     @property
     def _database_relation_is_created(self) -> bool:
-        """Returns whether database relation is created."""
+        """Returns whether database relation is created.
+
+        Returns:
+            bool: Whether database relation is created.
+        """
         return self._relation_created("database")
 
     def _relation_created(self, relation_name: str) -> bool:
@@ -119,11 +131,9 @@ class NRFOperatorCharm(CharmBase):
             relation_name (str): Relation name
 
         Returns:
-            str: Whether the relation was created.
+            bool: Whether the relation was created.
         """
-        if not self.model.get_relation(relation_name):
-            return False
-        return True
+        return bool(self.model.get_relation(relation_name))
 
     @property
     def _pebble_layer(self) -> Layer:
@@ -149,7 +159,11 @@ class NRFOperatorCharm(CharmBase):
 
     @property
     def _environment_variables(self) -> dict:
-        """Returns workload service environment variables."""
+        """Returns workload service environment variables.
+
+        Returns:
+            dict: Environment variables
+        """
         return {
             "GRPC_GO_LOG_VERBOSITY_LEVEL": "99",
             "GRPC_GO_LOG_SEVERITY_LEVEL": "info",

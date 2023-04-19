@@ -50,7 +50,7 @@ class TestCharm(unittest.TestCase):
         )
 
     @patch("ops.model.Container.push")
-    def test_given_cant_connect_to_workload_container_when_database_created_event_then_event_is_deferred(  # noqa: E501
+    def test_given_cant_connect_to_workload_container_when_database_created_event_then_config_file_is_not_pushed(  # noqa: E501
         self,
         patch_push,
     ):
