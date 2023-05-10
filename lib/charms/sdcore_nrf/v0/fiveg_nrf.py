@@ -6,7 +6,7 @@
 This library contains the Requires and Provides classes for handling the `fiveg_nrf`
 interface.
 
-The purpose of this library is to relate a charm claiming to provide 
+The purpose of this library is to relate a charm claiming to provide
 NRF information and another charm requiring this information.
 
 ## Getting Started
@@ -103,18 +103,15 @@ LIBAPI = 0
 # to 0 if you are raising the major API version
 LIBPATCH = 1
 
-import logging
+import logging  # noqa: E402
+from typing import Optional  # noqa: E402
 
-from ops.charm import CharmBase, CharmEvents, RelationChangedEvent
-from ops.framework import EventBase, EventSource, Handle, Object
-
-from pydantic import BaseModel, AnyHttpUrl, Field, BaseModel, ValidationError, validator
-
-from interface_tester.schema_base import DataBagSchema
-
-from validators import url as check_url_validity
-from validators import ValidationFailure
-
+from interface_tester.schema_base import (  # type: ignore[import]  # noqa: E402
+    DataBagSchema,
+)
+from ops.charm import CharmBase, CharmEvents, RelationChangedEvent  # noqa: E402
+from ops.framework import EventBase, EventSource, Handle, Object  # noqa: E402
+from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -133,26 +130,30 @@ Examples:
 
 
 class MyProviderAppData(BaseModel):
+    """Provider app data for fiveg_nrf."""
+
     url: AnyHttpUrl = Field(
-        description="Url to reach the NRF.",
-        examples=["https://nrf-example.com:1234"]
+        description="Url to reach the NRF.", examples=["https://nrf-example.com:1234"]
     )
+
 
 class ProviderSchema(DataBagSchema):
     """Provider schema for fiveg_nrf."""
+
     app: MyProviderAppData
+
 
 class RequirerSchema(DataBagSchema):
     """Requirer schema for fiveg_nrf."""
-    
+
 
 class NRFAvailableEvent(EventBase):
     """Charm event emitted when a NRF is available. It carries the NRF url."""
-    
+
     def __init__(self, handle: Handle, url: str):
         """Init."""
         super().__init__(handle)
-        self.url = url # TODO:
+        self.url = url
 
     def snapshot(self) -> dict:
         """Returns snapshot."""
@@ -167,56 +168,36 @@ class NRFRequirerCharmEvents(CharmEvents):
     """List of events that the NRF requirer charm can leverage."""
 
     nrf_available = EventSource(NRFAvailableEvent)
-    
+
 
 class NRFRequires(Object):
     """Class to be instantiated by the NRF requirer charm."""
-    
+
     on = NRFRequirerCharmEvents()
-    
+
     def __init__(self, charm: CharmBase, relation_name: str):
         """Init."""
         super().__init__(charm, relation_name)
         self.charm = charm
         self.relation_name = relation_name
-        self.framework.observe(
-            charm.on[relation_name].relation_changed,
-            self._on_relation_changed
-        )
-    
+        self.framework.observe(charm.on[relation_name].relation_changed, self._on_relation_changed)
+
     @staticmethod
-    def _relation_data_is_valid(remote_app_relation_data: dict) -> bool:
+    def _relation_data_is_valid(relation_data: dict) -> bool:
         """Returns whether URL is valid.
-        
-        Args:
-            dict: Remote app relation data.
-        Returns:
-            bool: True if relation data is valid, False otherwise.
-        """
-        
-        try:
-            MyProviderAppData.parse_obj(remote_app_relation_data)
-            return True
-        except ValueError as e:
-            logger.error("Invalid relation data: %s", e)
-            return False
-        
-    @staticmethod
-    def _relation_data_is_valid(url: str) -> bool:
-        """Returns whether URL is valid.
-        
+
         Args:
             str: URL to be validated.
+
         Returns:
             bool: True if URL is valid, False otherwise.
         """
         try:
-            ProviderSchema(app=MyProviderAppData(url=url))
+            ProviderSchema(app=relation_data)
             return True
-        except ValidationError as e:
-            logger.error("Invalid url: %s", e)
+        except ValidationError:
             return False
-        
+
     def _on_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handler triggered on relation changed event.
 
@@ -226,16 +207,40 @@ class NRFRequires(Object):
         Returns:
             None
         """
+        relation = self.model.get_relation(self.relation_name)
+        if not relation:
+            logger.warning(f"No relation: {self.relation_name}")
+            return
         relation = event.relation
         if not relation.app:
             logger.warning("No remote application in relation: %s", self.relation_name)
             return
-        remote_app_relation_data = relation.data[relation.app]
-        if not self._relation_data_is_valid(dict(remote_app_relation_data)): # TODO: pydantic validation migth fail here
-            logger.warning("Invalid relation data: %s", remote_app_relation_data)
+        remote_app_relation_data = dict(relation.data[relation.app])
+        if not self._relation_data_is_valid(remote_app_relation_data):
+            logger.error("Invalid relation data: %s", remote_app_relation_data)
             return
         self.on.nrf_available.emit(url=remote_app_relation_data["url"])
-        
+
+    def get_nrf_url(self) -> Optional[str]:
+        """Returns NRF url.
+
+        Returns:
+            str: NRF url.
+        """
+        relation = self.model.get_relation(self.relation_name)
+        if not relation:
+            logger.warning(f"No relation: {self.relation_name}")
+            return None
+        if not relation.app:
+            logger.warning("No remote application in relation: %s", self.relation_name)
+            return None
+        remote_app_relation_data = dict(relation.data[relation.app])
+        if not self._relation_data_is_valid(remote_app_relation_data):
+            logger.error("Invalid relation data: %s", remote_app_relation_data)
+            return None
+        return remote_app_relation_data.get("url")
+
+
 class NRFProvides(Object):
     """Class to be instantiated by the charm providing the NRF data."""
 
@@ -248,14 +253,15 @@ class NRFProvides(Object):
     @staticmethod
     def _relation_data_is_valid(url: str) -> bool:
         """Returns whether URL is valid.
-        
+
         Args:
             str: URL to be validated.
+
         Returns:
             bool: True if URL is valid, False otherwise.
         """
         try:
-            ProviderSchema(app=MyProviderAppData(url=url))
+            ProviderSchema(app=MyProviderAppData(url=url))  # type: ignore[arg-type]
             return True
         except ValidationError as e:
             logger.error("Invalid url: %s", e)
@@ -267,11 +273,12 @@ class NRFProvides(Object):
         Args:
             str: NRF url
             int: Relation ID
+
         Returns:
             None
         """
         if not self.charm.unit.is_leader():
-           raise RuntimeError("Unit must be leader to set application relation data.")
+            raise RuntimeError("Unit must be leader to set application relation data.")
         relations = self.model.relations[self.relation_name]
         if not relations:
             raise RuntimeError(f"Relation {self.relation_name} not created yet.")

@@ -7,17 +7,17 @@ from unittest.mock import PropertyMock, patch
 import pytest
 from ops import testing
 
-from tests.unit.charms.dummy_provider_charm.src.charm import DummyFiveGNRFProviderCharm
-
-DUMMY_PROVIDER_CHARM = (
-    "tests.unit.charms.dummy_provider_charm.src.charm.DummyFiveGNRFProviderCharm"
+from tests.unit.charms.sdcore_nrf.v0.dummy_provider_charm.src.charm import (  # noqa: E501
+    DummyFiveGNRFProviderCharm,
 )
+
+DUMMY_PROVIDER_CHARM = "tests.unit.charms.sdcore_nrf.v0.dummy_provider_charm.src.charm.DummyFiveGNRFProviderCharm"  # noqa: E501
 
 
 class TestFiveGNRFProvider(unittest.TestCase):
     def setUp(self):
         self.relation_name = "fiveg-nrf"
-        self.remote_app_name = "dummy-nrf-requirer"
+        self.remote_app_name = "dummy-nrf-provider"
         self.remote_unit_name = f"{self.remote_app_name}/0"
         self.harness = testing.Harness(DummyFiveGNRFProviderCharm)
         self.addCleanup(self.harness.cleanup)

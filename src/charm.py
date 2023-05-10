@@ -33,6 +33,7 @@ class NRFOperatorCharm(CharmBase):
     """Main class to describe juju event handling for the 5G NRF operator."""
 
     def __init__(self, *args):
+        """Initialize charm."""
         super().__init__(*args)
         self._container_name = self._service_name = "nrf"
         self._container = self.unit.get_container(self._container_name)
