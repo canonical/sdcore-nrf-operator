@@ -29,28 +29,25 @@ Example:
 from ops.charm import CharmBase
 from ops.main import main
 
-from charms.sdcore_nrf_operator.v0.fiveg_nrf import (
-    NRFAvailableEvent,
-    NRFRequires,
-)
+from lib.charms.sdcore_nrf.v0.fiveg_nrf import NRFAvailableEvent, NRFRequires
+
+logger = logging.getLogger(__name__)
 
 
-class DummyNRFRequirerCharm(CharmBase):
+class DummyFiveGNRFRequirerCharm(CharmBase):
+
     def __init__(self, *args):
         super().__init__(*args)
         self.nrf_requirer = NRFRequires(self, "fiveg-nrf")
-        self.framework.observe(
-            self.nrf_requirer.on.nrf_available,
-            self._on_nrf_available,
-        )
+        self.framework.observe(self.nrf_requirer.on.nrf_available, self._on_nrf_available)
 
     def _on_nrf_available(self, event: NRFAvailableEvent):
-        url = event.url
-        <Do something with the url>
+        nrf_url = event.url
+        <do something with the nrf_url>
 
 
 if __name__ == "__main__":
-    main(DummyNRFRequirerCharm)
+    main(DummyFiveGNRFRequirerCharm)
 ```
 
 ### Provider charm
@@ -62,33 +59,29 @@ Example:
 from ops.charm import CharmBase, RelationJoinedEvent
 from ops.main import main
 
-from charms.nrf_interface.v0.nrf_interface import (
-    NRFProvides,
-)
+from lib.charms.sdcore_nrf.v0.fiveg_nrf import NRFProvides
 
 
-class DummyNRFProviderCharm(CharmBase):
+class DummyFiveGNRFProviderCharm(CharmBase):
+
+    NRF_URL = "https://nrf.example.com"
+
     def __init__(self, *args):
         super().__init__(*args)
         self.nrf_provider = NRFProvides(self, "fiveg-nrf")
         self.framework.observe(
-            self.on.nrf_relation_joined, self._on_nrf_relation_joined
+            self.on.fiveg_nrf_relation_joined, self._on_fiveg_nrf_relation_joined
         )
 
-    def _on_nrf_relation_joined(self, event: RelationJoinedEvent) -> None:
-        if not self.unit.is_leader():
-            return
-        url = "<Here goes your code for fetching the NRF url>"
-        try:
+    def _on_fiveg_nrf_relation_joined(self, event: RelationJoinedEvent):
+        if self.unit.is_leader():
             self.nrf_provider.set_nrf_information(
-              url=url, relation_id=event.relation.id
+                url=self.NRF_URL,
             )
-        except AddressValueError:
-            self.unit.status = BlockedStatus("Invalid MME IPv4 address.")
 
 
 if __name__ == "__main__":
-    main(DummyNRFProviderCharm)
+    main(DummyFiveGNRFProviderCharm)
 ```
 
 """
