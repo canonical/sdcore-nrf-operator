@@ -1,0 +1,13 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: fiveg-nrf-requirer
+
+description: |
+  Dummy 5G NRF requirer charm.
+summary: |
+  Dummy 5G NRF requirer charm.
+
+provides:
+  fiveg-nrf:
+    interface: fiveg-nrf

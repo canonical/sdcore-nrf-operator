@@ -2,3 +2,6 @@ ops
 jinja2
 lightkube
 lightkube-models
+pydantic
+validators
+pytest-interface-tester
