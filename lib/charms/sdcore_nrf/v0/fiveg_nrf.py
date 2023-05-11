@@ -97,13 +97,12 @@ LIBAPI = 0
 LIBPATCH = 1
 
 import logging  # noqa: E402
-from typing import Optional  # noqa: E402
+from typing import Dict, Optional  # noqa: E402
 
-from interface_tester.schema_base import (  # type: ignore[import]  # noqa: E402
-    DataBagSchema,
-)
+from interface_tester.schema_base import DataBagSchema  # type: ignore[import]  # noqa: E402
 from ops.charm import CharmBase, CharmEvents, RelationChangedEvent  # noqa: E402
 from ops.framework import EventBase, EventSource, Handle, Object  # noqa: E402
+from ops.model import Relation  # noqa: E402
 from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -122,7 +121,7 @@ Examples:
 """
 
 
-class MyProviderAppData(BaseModel):
+class ProviderAppData(BaseModel):
     """Provider app data for fiveg_nrf."""
 
     url: AnyHttpUrl = Field(
@@ -133,11 +132,7 @@ class MyProviderAppData(BaseModel):
 class ProviderSchema(DataBagSchema):
     """Provider schema for fiveg_nrf."""
 
-    app: MyProviderAppData
-
-
-class RequirerSchema(DataBagSchema):
-    """Requirer schema for fiveg_nrf."""
+    app: ProviderAppData
 
 
 class NRFAvailableEvent(EventBase):
@@ -175,6 +170,53 @@ class NRFRequires(Object):
         self.relation_name = relation_name
         self.framework.observe(charm.on[relation_name].relation_changed, self._on_relation_changed)
 
+    def _on_relation_changed(self, event: RelationChangedEvent) -> None:
+        """Handler triggered on relation changed event.
+
+        Args:
+            event: Juju event (RelationChangedEvent)
+
+        Returns:
+            None
+        """
+        if remote_app_relation_data := self._get_remote_app_relation_data(event.relation):
+            self.on.nrf_available.emit(url=remote_app_relation_data["url"])
+
+    def get_nrf_url(self) -> Optional[str]:
+        """Returns NRF url.
+
+        Returns:
+            str: NRF url.
+        """
+        if remote_app_relation_data := self._get_remote_app_relation_data():
+            return remote_app_relation_data.get("url")
+        return None
+
+    def _get_remote_app_relation_data(
+        self, relation: Optional[Relation] = None
+    ) -> Optional[Dict[str, str]]:
+        """Get relation data for the remote application.
+
+        Args:
+            Relation: Juju relation object (optional).
+
+        Returns:
+            Dict: Relation data for the remote application
+            or None if the relation data is invalid.
+        """
+        relation = relation or self.model.get_relation(self.relation_name)
+        if not relation:
+            logger.warning(f"No relation: {self.relation_name}")
+            return None
+        if not relation.app:
+            logger.warning("No remote application in relation: %s", self.relation_name)
+            return None
+        remote_app_relation_data = dict(relation.data[relation.app])
+        if not self._relation_data_is_valid(remote_app_relation_data):
+            logger.error("Invalid relation data: %s", remote_app_relation_data)
+            return None
+        return remote_app_relation_data
+
     @staticmethod
     def _relation_data_is_valid(relation_data: dict) -> bool:
         """Returns whether URL is valid.
@@ -190,48 +232,6 @@ class NRFRequires(Object):
             return True
         except ValidationError:
             return False
-
-    def _on_relation_changed(self, event: RelationChangedEvent) -> None:
-        """Handler triggered on relation changed event.
-
-        Args:
-            event: Juju event (RelationChangedEvent)
-
-        Returns:
-            None
-        """
-        relation = self.model.get_relation(self.relation_name)
-        if not relation:
-            logger.warning(f"No relation: {self.relation_name}")
-            return
-        relation = event.relation
-        if not relation.app:
-            logger.warning("No remote application in relation: %s", self.relation_name)
-            return
-        remote_app_relation_data = dict(relation.data[relation.app])
-        if not self._relation_data_is_valid(remote_app_relation_data):
-            logger.error("Invalid relation data: %s", remote_app_relation_data)
-            return
-        self.on.nrf_available.emit(url=remote_app_relation_data["url"])
-
-    def get_nrf_url(self) -> Optional[str]:
-        """Returns NRF url.
-
-        Returns:
-            str: NRF url.
-        """
-        relation = self.model.get_relation(self.relation_name)
-        if not relation:
-            logger.warning(f"No relation: {self.relation_name}")
-            return None
-        if not relation.app:
-            logger.warning("No remote application in relation: %s", self.relation_name)
-            return None
-        remote_app_relation_data = dict(relation.data[relation.app])
-        if not self._relation_data_is_valid(remote_app_relation_data):
-            logger.error("Invalid relation data: %s", remote_app_relation_data)
-            return None
-        return remote_app_relation_data.get("url")
 
 
 class NRFProvides(Object):
@@ -254,7 +254,7 @@ class NRFProvides(Object):
             bool: True if URL is valid, False otherwise.
         """
         try:
-            ProviderSchema(app=MyProviderAppData(url=url))  # type: ignore[arg-type]
+            ProviderSchema(app=ProviderAppData(url=url))  # type: ignore[arg-type]
             return True
         except ValidationError as e:
             logger.error("Invalid url: %s", e)

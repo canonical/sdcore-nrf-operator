@@ -28,5 +28,5 @@ select = ["E", "W", "F", "C", "N", "R", "D", "H"]
 # Ignore D107 Missing docstring in __init__
 ignore = ["D107"]
 # D100, D101, D102, D103: Ignore missing docstrings in tests
-per-file-ignores = ["tests/*:D100,D101,D102,D103,D104"]
+per-file-ignores = ["tests/*:D100,D101,D102,D103,D104", "lib/charms/data_platform_libs*:E501"]
 docstring-convention = "google"
