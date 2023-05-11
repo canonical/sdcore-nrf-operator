@@ -29,7 +29,7 @@ Example:
 from ops.charm import CharmBase
 from ops.main import main
 
-from lib.charms.sdcore_nrf.v0.fiveg_nrf import NRFAvailableEvent, NRFRequires
+from charms.sdcore_nrf.v0.fiveg_nrf import NRFAvailableEvent, NRFRequires
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ Example:
 from ops.charm import CharmBase, RelationJoinedEvent
 from ops.main import main
 
-from lib.charms.sdcore_nrf.v0.fiveg_nrf import NRFProvides
+from charms.sdcore_nrf.v0.fiveg_nrf import NRFProvides
 
 
 class DummyFiveGNRFProviderCharm(CharmBase):
