@@ -207,7 +207,8 @@ class NRFRequires(Object):
         if remote_app_relation_data := self._get_remote_app_relation_data(event.relation):
             self.on.nrf_available.emit(url=remote_app_relation_data["url"])
 
-    def get_nrf_url(self) -> Optional[str]:
+    @property
+    def nrf_url(self) -> Optional[str]:
         """Returns NRF url.
 
         Returns:
@@ -252,29 +253,20 @@ class NRFProvides(Object):
         self.relation_name = relation_name
         self.charm = charm
 
-    def set_nrf_information(self, url: str, relation_name: Optional[str] = None) -> None:
-        """Updates the application relation data for one or all relations.
+    def set_nrf_information(self, url: str) -> None:
+        """Sets url in the application relation data.
 
         Args:
             url (str): NRF url
-            relation_name (Optional[str]): Relation name.
-
         Returns:
             None
         """
         if not self.charm.unit.is_leader():
             raise RuntimeError("Unit must be leader to set application relation data.")
+        relations = self.model.relations[self.relation_name]
+        if not relations:
+            raise RuntimeError(f"Relation {self.relation_name} not created yet.")
         if not data_is_valid(url):
             raise ValueError(f"Invalid url: {url}")
-
-        if relation_name:
-            relations = [self.model.get_relation(relation_name)]
-            if not relations:
-                raise RuntimeError(f"Relation {relation_name} not created yet.")
-        else:
-            relations = self.model.relations[self.relation_name]
-            if not relations:
-                raise RuntimeError(f"Relation {self.relation_name} not created yet.")
-
         for relation in relations:
             relation.data[self.charm.app].update({"url": url})

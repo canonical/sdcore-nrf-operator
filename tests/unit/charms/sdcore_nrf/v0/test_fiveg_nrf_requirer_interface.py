@@ -100,7 +100,7 @@ class TestFiveGNRFRequirer(unittest.TestCase):
             relation_id=relation_id, app_or_unit=self.remote_app_name, key_values=relation_data
         )
 
-        nrf_url = self.harness.charm.nrf_requirer.get_nrf_url()
+        nrf_url = self.harness.charm.nrf_requirer.nrf_url
         self.assertEqual(nrf_url, "https://nrf.example.com")
 
     def test_given_nrf_information_not_in_relation_data_when_get_nrf_url_then_returns_none(  # noqa: E501
@@ -113,7 +113,7 @@ class TestFiveGNRFRequirer(unittest.TestCase):
             self.harness.update_relation_data(
                 relation_id=relation_id, app_or_unit=self.remote_app_name, key_values=relation_data
             )
-            nrf_url = self.harness.charm.nrf_requirer.get_nrf_url()
+            nrf_url = self.harness.charm.nrf_requirer.nrf_url
             self.assertIsNone(nrf_url)
             self.assertIn(
                 f"ERROR:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
@@ -130,7 +130,7 @@ class TestFiveGNRFRequirer(unittest.TestCase):
             self.harness.update_relation_data(
                 relation_id=relation_id, app_or_unit=self.remote_app_name, key_values=relation_data
             )
-            nrf_url = self.harness.charm.nrf_requirer.get_nrf_url()
+            nrf_url = self.harness.charm.nrf_requirer.nrf_url
             self.assertIsNone(nrf_url)
             self.assertIn(
                 f"ERROR:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
