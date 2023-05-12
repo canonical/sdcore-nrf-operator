@@ -8,6 +8,6 @@ description: |
 summary: |
   Dummy 5G NRF requirer charm.
 
-provides:
+requires:
   fiveg-nrf:
     interface: fiveg-nrf

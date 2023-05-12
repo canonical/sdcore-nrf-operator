@@ -86,6 +86,15 @@ if __name__ == "__main__":
 
 """
 
+import logging
+from typing import Dict, Optional
+
+from interface_tester.schema_base import DataBagSchema
+from ops.charm import CharmBase, CharmEvents, RelationChangedEvent
+from ops.framework import EventBase, EventSource, Handle, Object
+from ops.model import Relation
+from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError
+
 # The unique Charmhub library identifier, never change it
 LIBID = "cd132a12c2b34243bfd2bae8d08c32d6"
 
@@ -96,14 +105,10 @@ LIBAPI = 0
 # to 0 if you are raising the major API version
 LIBPATCH = 1
 
-import logging  # noqa: E402
-from typing import Dict, Optional  # noqa: E402
+PYDEPS = [
+    "pydantic" "pytest-interface-tester",
+]
 
-from interface_tester.schema_base import DataBagSchema  # type: ignore[import]  # noqa: E402
-from ops.charm import CharmBase, CharmEvents, RelationChangedEvent  # noqa: E402
-from ops.framework import EventBase, EventSource, Handle, Object  # noqa: E402
-from ops.model import Relation  # noqa: E402
-from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +249,7 @@ class NRFProvides(Object):
         self.charm = charm
 
     @staticmethod
-    def _relation_data_is_valid(url: str) -> bool:
+    def _url_is_valid(url: str) -> bool:
         """Returns whether URL is valid.
 
         Args:
@@ -265,7 +270,6 @@ class NRFProvides(Object):
 
         Args:
             str: NRF url
-            int: Relation ID
 
         Returns:
             None
@@ -275,7 +279,7 @@ class NRFProvides(Object):
         relations = self.model.relations[self.relation_name]
         if not relations:
             raise RuntimeError(f"Relation {self.relation_name} not created yet.")
-        if not self._relation_data_is_valid(url):
+        if not self._url_is_valid(url):
             raise ValueError(f"Invalid url: {url}")
         for relation in relations:
             relation.data[self.charm.app].update({"url": url})
