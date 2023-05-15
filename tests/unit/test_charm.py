@@ -7,7 +7,7 @@ from unittest.mock import patch
 from ops import testing
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 
-from charm import NRFOperatorCharm
+from charm import NRFOperatorCharm  # type: ignore[import]
 
 
 class TestCharm(unittest.TestCase):

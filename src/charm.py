@@ -14,7 +14,7 @@ from charms.data_platform_libs.v0.data_interfaces import (  # type: ignore[impor
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
     KubernetesServicePatch,
 )
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader  # type: ignore[import]
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase, PebbleReadyEvent, RelationJoinedEvent
 from ops.main import main
@@ -61,7 +61,7 @@ class NRFOperatorCharm(CharmBase):
             event.defer()
             return
         self._write_config_file(
-            database_url=event.uris.split(",")[0],
+            database_url=event.uris.split(",")[0],  # type: ignore[union-attr]
         )
         self._configure_pebble_layer(event)
 

@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Library for the `fiveg_nrf` relation.
@@ -77,7 +77,16 @@ class DummyFiveGNRFProviderCharm(CharmBase):
         if self.unit.is_leader():
             self.nrf_provider.set_nrf_information(
                 url=self.NRF_URL,
+                event=event
             )
+
+    def _on_nrf_url_changed(
+        self,
+    ):
+        self.nrf_provider.set_nrf_information(
+            url="https://different.nrf.com",
+            update_all_relations=True,
+        )
 
 
 if __name__ == "__main__":
@@ -87,10 +96,10 @@ if __name__ == "__main__":
 """
 
 import logging
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
-from interface_tester.schema_base import DataBagSchema
-from ops.charm import CharmBase, CharmEvents, RelationChangedEvent
+from interface_tester.schema_base import DataBagSchema  # type: ignore[import]
+from ops.charm import CharmBase, CharmEvents, RelationChangedEvent, RelationJoinedEvent
 from ops.framework import EventBase, EventSource, Handle, Object
 from ops.model import Relation
 from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError
@@ -218,16 +227,14 @@ class NRFRequires(Object):
             return remote_app_relation_data.get("url")
         return None
 
-    def _get_remote_app_relation_data(
-        self, relation: Optional[Relation] = None
-    ) -> Optional[Dict[str, str]]:
+    def _get_remote_app_relation_data(self, relation: Optional[Relation] = None) -> Optional[dict]:
         """Get relation data for the remote application.
 
         Args:
             Relation: Juju relation object (optional).
 
         Returns:
-            Dict: Relation data for the remote application
+            dict: Relation data for the remote application.
             or None if the relation data is invalid.
         """
         relation = relation or self.model.get_relation(self.relation_name)
@@ -253,20 +260,37 @@ class NRFProvides(Object):
         self.relation_name = relation_name
         self.charm = charm
 
-    def set_nrf_information(self, url: str) -> None:
-        """Sets url in the application relation data.
+    def set_nrf_information(
+        self,
+        url: str,
+        event: Optional[RelationJoinedEvent] = None,
+        update_all_relations: bool = False,
+    ) -> None:
+        """Sets NRF url in the application(s) relation data.
 
         Args:
-            url (str): NRF url
+            url (str): NRF url.
+            event (Optional[RelationJoinedEvent]): Juju event.
+            update_all_relations (bool): Whether to update all relations or not.
+
         Returns:
             None
         """
         if not self.charm.unit.is_leader():
             raise RuntimeError("Unit must be leader to set application relation data.")
-        relations = self.model.relations[self.relation_name]
-        if not relations:
-            raise RuntimeError(f"Relation {self.relation_name} not created yet.")
         if not data_is_valid(url):
             raise ValueError(f"Invalid url: {url}")
-        for relation in relations:
-            relation.data[self.charm.app].update({"url": url})
+
+        if update_all_relations:
+            relations = self.model.relations[self.relation_name]
+            if not relations:
+                raise RuntimeError(f"Relation {self.relation_name} not created yet.")
+            for relation in relations:
+                relation.data[self.charm.app].update({"url": url})
+        else:
+            if event is None:
+                raise RuntimeError("Event must be provided if not updating all relations.")
+            relation = event.relation
+            if not relation:
+                raise RuntimeError(f"Relation {self.relation_name} not created yet.")
+            event.relation.data[self.charm.app].update({"url": url})

@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 from ops import testing
 
-from tests.unit.charms.sdcore_nrf.v0.dummy_requirer_charm.src.charm import (  # noqa: E501
+from tests.unit.charms.sdcore_nrf.v0.dummy_requirer_charm.src.dummy_requirer_charm import (  # noqa: E501
     DummyFiveGNRFRequirerCharm,
 )
 
-DUMMY_REQUIRER_CHARM = "tests.unit.charms.sdcore_nrf.v0.dummy_requirer_charm.src.charm.DummyFiveGNRFRequirerCharm"  # noqa: E501
+DUMMY_REQUIRER_CHARM = "tests.unit.charms.sdcore_nrf.v0.dummy_requirer_charm.src.dummy_requirer_charm.DummyFiveGNRFRequirerCharm"  # noqa: E501
 
 
 class TestFiveGNRFRequirer(unittest.TestCase):

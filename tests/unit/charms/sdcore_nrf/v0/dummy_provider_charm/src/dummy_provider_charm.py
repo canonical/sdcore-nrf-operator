@@ -25,10 +25,18 @@ class DummyFiveGNRFProviderCharm(CharmBase):
         )
 
     def _on_fiveg_nrf_relation_joined(self, event: RelationJoinedEvent):
-        if self.unit.is_leader():
-            self.nrf_provider.set_nrf_information(
-                url=self.NRF_URL,
-            )
+        self.nrf_provider.set_nrf_information(
+            url=self.NRF_URL,
+            event=event,
+        )
+
+    def _on_nrf_url_changed(
+        self,
+    ):
+        self.nrf_provider.set_nrf_information(
+            url="https://different.nrf.com",
+            update_all_relations=True,
+        )
 
 
 if __name__ == "__main__":

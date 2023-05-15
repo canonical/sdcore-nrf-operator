@@ -30,3 +30,12 @@ ignore = ["D107"]
 # D100, D101, D102, D103: Ignore missing docstrings in tests
 per-file-ignores = ["tests/*:D100,D101,D102,D103,D104"]
 docstring-convention = "google"
+
+# Ignore libraries that do not have type hint nor stubs
+[[tool.mypy.overrides]]
+module = ["ops.*", "kubernetes.*", "flatten_json.*", "git.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["charms.*"]
+follow_imports = "silent"

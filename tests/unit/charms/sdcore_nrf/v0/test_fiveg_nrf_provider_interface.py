@@ -2,16 +2,16 @@
 # See LICENSE file for licensing details.
 
 import unittest
-from unittest.mock import PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 from ops import testing
 
-from tests.unit.charms.sdcore_nrf.v0.dummy_provider_charm.src.charm import (  # noqa: E501
+from tests.unit.charms.sdcore_nrf.v0.dummy_provider_charm.src.dummy_provider_charm import (  # noqa: E501
     DummyFiveGNRFProviderCharm,
 )
 
-DUMMY_PROVIDER_CHARM = "tests.unit.charms.sdcore_nrf.v0.dummy_provider_charm.src.charm.DummyFiveGNRFProviderCharm"  # noqa: E501
+DUMMY_PROVIDER_CHARM = "tests.unit.charms.sdcore_nrf.v0.dummy_provider_charm.src.dummy_provider_charm.DummyFiveGNRFProviderCharm"  # noqa: E501
 
 
 class TestFiveGNRFProvider(unittest.TestCase):
@@ -51,12 +51,12 @@ class TestFiveGNRFProvider(unittest.TestCase):
     ):
         self.harness.set_leader(is_leader=False)
 
-        relation_id = self._create_relation(remote_app_name=self.remote_app_name)
-
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
-        )
-        self.assertEqual(relation_data, {})
+        with pytest.raises(RuntimeError):
+            relation_id = self._create_relation(remote_app_name=self.remote_app_name)
+            relation_data = self.harness.get_relation_data(
+                relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+            )
+            self.assertEqual(relation_data, {})
 
     @patch(f"{DUMMY_PROVIDER_CHARM}.NRF_URL", new_callable=PropertyMock)
     def test_given_provided_nrf_url_is_not_valid_when_set_url_then_error_is_raised(  # noqa: E501
@@ -68,13 +68,17 @@ class TestFiveGNRFProvider(unittest.TestCase):
         with pytest.raises(ValueError):
             self._create_relation(remote_app_name=self.remote_app_name)
 
-    def test_given_unit_is_leader_and_fiveg_nrf_relation_is_not_created_then_runtime_error_is_raised(  # noqa: E501
+    def test_given_unit_is_leader_and_fiveg_nrf_relation_is_not_created_when_set_nrf_information_then_runtime_error_is_raised(  # noqa: E501
         self,
     ):
         self.harness.set_leader(is_leader=True)
+        mock_event = Mock()
+        mock_event.relation = None
 
         with pytest.raises(RuntimeError) as e:
-            self.harness.charm.nrf_provider.set_nrf_information(url="https://nrf.example.com")
+            self.harness.charm.nrf_provider.set_nrf_information(
+                url="https://nrf.example.com", event=mock_event
+            )
         self.assertEqual(str(e.value), "Relation fiveg-nrf not created yet.")
 
     def test_given_unit_is_leader_when_multiple_fiveg_nrf_relation_joined_then_data_in_application_databag(  # noqa: E501
@@ -95,3 +99,28 @@ class TestFiveGNRFProvider(unittest.TestCase):
             relation_id=relation_id_2, app_or_unit=self.harness.charm.app.name
         )
         self.assertEqual(relation_data_2["url"], expected_nrf_url)
+
+    def test_given_unit_is_leader_and_multiple_fiveg_nrf_relations_when_set_nrf_information_and_update_all_relations_is_true_then_all_relations_are_updated(  # noqa: E501
+        self,
+    ):
+        self.harness.set_leader(is_leader=True)
+        remote_app_name_1 = self.remote_app_name
+        remote_app_name_2 = f"second-{self.remote_app_name}"
+        expected_nrf_url = "https://nrf.example.com"
+        relation_id_1 = self._create_relation(remote_app_name=remote_app_name_1)
+        relation_data_1 = self.harness.get_relation_data(
+            relation_id=relation_id_1, app_or_unit=self.harness.charm.app.name
+        )
+        relation_id_2 = self._create_relation(remote_app_name=remote_app_name_2)
+        relation_data_2 = self.harness.get_relation_data(
+            relation_id=relation_id_2, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_data_1["url"], expected_nrf_url)
+        self.assertEqual(relation_data_2["url"], expected_nrf_url)
+
+        self.harness.charm.nrf_provider.set_nrf_information(
+            url="https://different.nrf.com", update_all_relations=True
+        )
+
+        self.assertEqual(relation_data_1["url"], "https://different.nrf.com")
+        self.assertEqual(relation_data_2["url"], "https://different.nrf.com")
