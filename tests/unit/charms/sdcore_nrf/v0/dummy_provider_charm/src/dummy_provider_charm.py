@@ -25,17 +25,17 @@ class DummyFiveGNRFProviderCharm(CharmBase):
         )
 
     def _on_fiveg_nrf_relation_joined(self, event: RelationJoinedEvent):
+        relation_id = event.relation.id
         self.nrf_provider.set_nrf_information(
             url=self.NRF_URL,
-            event=event,
+            relation_id=relation_id,
         )
 
     def _on_nrf_url_changed(
         self,
     ):
-        self.nrf_provider.set_nrf_information(
+        self.nrf_provider.set_nrf_information_in_all_relations(
             url="https://different.nrf.com",
-            update_all_relations=True,
         )
 
 

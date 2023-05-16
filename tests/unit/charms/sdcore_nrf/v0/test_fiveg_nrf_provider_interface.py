@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 import unittest
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import PropertyMock, patch
 
 import pytest
 from ops import testing
@@ -72,12 +72,11 @@ class TestFiveGNRFProvider(unittest.TestCase):
         self,
     ):
         self.harness.set_leader(is_leader=True)
-        mock_event = Mock()
-        mock_event.relation = None
+        relation_id_for_unexsistant_relation = 0
 
         with pytest.raises(RuntimeError) as e:
             self.harness.charm.nrf_provider.set_nrf_information(
-                url="https://nrf.example.com", event=mock_event
+                url="https://nrf.example.com", relation_id=relation_id_for_unexsistant_relation
             )
         self.assertEqual(str(e.value), "Relation fiveg-nrf not created yet.")
 
@@ -100,7 +99,7 @@ class TestFiveGNRFProvider(unittest.TestCase):
         )
         self.assertEqual(relation_data_2["url"], expected_nrf_url)
 
-    def test_given_unit_is_leader_and_multiple_fiveg_nrf_relations_when_set_nrf_information_and_update_all_relations_is_true_then_all_relations_are_updated(  # noqa: E501
+    def test_given_unit_is_leader_and_multiple_fiveg_nrf_relations_when_set_nrf_information_in_all_relations_then_all_relations_are_updated(  # noqa: E501
         self,
     ):
         self.harness.set_leader(is_leader=True)
@@ -118,8 +117,8 @@ class TestFiveGNRFProvider(unittest.TestCase):
         self.assertEqual(relation_data_1["url"], expected_nrf_url)
         self.assertEqual(relation_data_2["url"], expected_nrf_url)
 
-        self.harness.charm.nrf_provider.set_nrf_information(
-            url="https://different.nrf.com", update_all_relations=True
+        self.harness.charm.nrf_provider.set_nrf_information_in_all_relations(
+            url="https://different.nrf.com"
         )
 
         self.assertEqual(relation_data_1["url"], "https://different.nrf.com")
