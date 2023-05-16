@@ -51,7 +51,7 @@ if __name__ == "__main__":
 ```
 
 ### Provider charm
-The provider charm is the one requiring providing the information about the NRF.
+The provider charm is the one providing the information about the NRF.
 
 Example:
 ```python
