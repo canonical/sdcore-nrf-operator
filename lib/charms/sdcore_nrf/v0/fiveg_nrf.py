@@ -18,7 +18,6 @@ charmcraft fetch-lib charms.sdcore_nrf_operator.v0.fiveg_nrf
 
 Add the following libraries to the charm's `requirements.txt` file:
 - pydantic
-- pytest-interface-tester
 
 ### Requirer charm
 The requirer charm is the one requiring the NRF information.
