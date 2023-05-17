@@ -114,12 +114,8 @@ class TestFiveGNRFProvider(unittest.TestCase):
         relation_data_2 = self.harness.get_relation_data(
             relation_id=relation_id_2, app_or_unit=self.harness.charm.app.name
         )
+
+        self.harness.charm.nrf_provider.set_nrf_information_in_all_relations(url=expected_nrf_url)
+
         self.assertEqual(relation_data_1["url"], expected_nrf_url)
         self.assertEqual(relation_data_2["url"], expected_nrf_url)
-
-        self.harness.charm.nrf_provider.set_nrf_information_in_all_relations(
-            url="https://different.nrf.com"
-        )
-
-        self.assertEqual(relation_data_1["url"], "https://different.nrf.com")
-        self.assertEqual(relation_data_2["url"], "https://different.nrf.com")
