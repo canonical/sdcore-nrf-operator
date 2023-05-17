@@ -114,7 +114,7 @@ LIBAPI = 0
 LIBPATCH = 1
 
 PYDEPS = [
-    "pydantic" "pytest-interface-tester",
+    "pydantic",
 ]
 
 
