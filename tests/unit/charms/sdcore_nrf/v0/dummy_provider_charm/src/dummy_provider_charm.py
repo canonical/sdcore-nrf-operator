@@ -31,13 +31,6 @@ class DummyFiveGNRFProviderCharm(CharmBase):
             relation_id=relation_id,
         )
 
-    def _on_nrf_url_changed(
-        self,
-    ):
-        self.nrf_provider.set_nrf_information_in_all_relations(
-            url="https://different.nrf.com",
-        )
-
 
 if __name__ == "__main__":
     main(DummyFiveGNRFProviderCharm)
