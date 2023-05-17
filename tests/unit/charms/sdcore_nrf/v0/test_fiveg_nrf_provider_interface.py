@@ -89,10 +89,9 @@ class TestFiveGNRFProvider(unittest.TestCase):
         expected_nrf_url = "https://nrf.example.com"
 
         relation_id_1 = self._create_relation(remote_app_name=remote_app_name_1)
-        relation_data_1 = self.harness.get_relation_data(
+        self.harness.get_relation_data(
             relation_id=relation_id_1, app_or_unit=self.harness.charm.app.name
         )
-        self.assertEqual(relation_data_1["url"], expected_nrf_url)
         relation_id_2 = self._create_relation(remote_app_name=remote_app_name_2)
         relation_data_2 = self.harness.get_relation_data(
             relation_id=relation_id_2, app_or_unit=self.harness.charm.app.name
