@@ -60,7 +60,7 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         with:
           name: tested-charm
-          path: .tox/**/sdcore-upf_ubuntu-22.04-amd64.charm
+          path: .tox/**/sdcore-nrf_ubuntu-22.04-amd64.charm
           retention-days: 5
       - name: Archive charmcraft logs
         if: failure()
