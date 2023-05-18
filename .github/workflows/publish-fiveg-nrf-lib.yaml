@@ -1,0 +1,30 @@
+name: Publish fiveg_nrf lib
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    name: Charmhub upload orc8r-libs
+    steps:
+      - uses: actions/checkout@v3
+      - name: Select Charmhub channel
+        uses: canonical/charming-actions/channel@2.2.5
+        id: channel
+      - uses: canonical/charming-actions/upload-charm@2.2.5
+        with:
+          credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
+          upload-image: "false"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          channel: "${{ steps.channel.outputs.name }}"
+
+      - name: Publish lib
+        env:
+          CHARMCRAFT_AUTH: "${{ secrets.CHARMCRAFT_AUTH }}"
+        run: |
+          set -eux
+          echo "Publishing lib"
+          charmcraft publish-lib charms.sdcore_nrf.v0.fiveg_nrf
