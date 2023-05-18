@@ -94,7 +94,7 @@ if __name__ == "__main__":
 """
 
 import logging
-from typing import Optional, Union
+from typing import Optional
 
 from interface_tester.schema_base import DataBagSchema  # type: ignore[import]
 from ops.charm import CharmBase, CharmEvents, RelationChangedEvent
@@ -110,7 +110,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 2
 
 PYDEPS = [
     "pydantic",
@@ -147,20 +147,17 @@ class ProviderSchema(DataBagSchema):
     app: ProviderAppData
 
 
-def data_matches_provider_schema(data: Union[str, dict]) -> bool:
+def data_matches_provider_schema(data: dict) -> bool:
     """Returns whether data matches provider schema.
 
     Args:
-        data (Union[str, dict]): Data to be validated.
+        data (dict): Data to be validated.
 
     Returns:
         bool: True if data matches provider schema, False otherwise.
     """
     try:
-        if isinstance(data, str):
-            ProviderSchema(app=ProviderAppData(url=data))  # type: ignore[arg-type]
-        else:
-            ProviderSchema(app=data)
+        ProviderSchema(app=data)
         return True
     except ValidationError as e:
         logger.error("Invalid data: %s", e)
@@ -274,7 +271,7 @@ class NRFProvides(Object):
         """
         if not self.charm.unit.is_leader():
             raise RuntimeError("Unit must be leader to set application relation data.")
-        if not data_matches_provider_schema(url):
+        if not data_matches_provider_schema(data={"url": url}):
             raise ValueError(f"Invalid url: {url}")
 
         relation = self.model.get_relation(
@@ -297,7 +294,7 @@ class NRFProvides(Object):
         """
         if not self.charm.unit.is_leader():
             raise RuntimeError("Unit must be leader to set application relation data.")
-        if not data_matches_provider_schema(url):
+        if not data_matches_provider_schema(data={"url": url}):
             raise ValueError(f"Invalid url: {url}")
 
         relations = self.model.relations[self.relation_name]
