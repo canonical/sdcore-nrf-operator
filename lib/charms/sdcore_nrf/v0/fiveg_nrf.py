@@ -112,9 +112,7 @@ LIBAPI = 0
 # to 0 if you are raising the major API version
 LIBPATCH = 3
 
-PYDEPS = [
-    "pydantic", "pytest-interface-tester"
-]
+PYDEPS = ["pydantic", "pytest-interface-tester"]
 
 
 logger = logging.getLogger(__name__)
