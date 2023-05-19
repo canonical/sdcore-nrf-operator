@@ -24,6 +24,7 @@ storage:
 requires:
   database:
     interface: mongodb_client
+
 provides:  
   fiveg-nrf:
     interface: fiveg-nrf
