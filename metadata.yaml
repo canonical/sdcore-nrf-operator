@@ -24,3 +24,6 @@ storage:
 requires:
   database:
     interface: mongodb_client
+
+assumes:
+  - k8s-api

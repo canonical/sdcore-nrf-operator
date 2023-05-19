@@ -1,0 +1,13 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: fiveg-nrf-provider
+
+description: |
+  Dummy 5G NRF provider charm.
+summary: |
+  Dummy 5G NRF provider charm.
+
+provides:
+  fiveg-nrf:
+    interface: fiveg-nrf
