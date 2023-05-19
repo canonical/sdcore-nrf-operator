@@ -14,6 +14,7 @@ from charms.data_platform_libs.v0.data_interfaces import (  # type: ignore[impor
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
     KubernetesServicePatch,
 )
+from charms.sdcore_nrf.v0.fiveg_nrf import NRFProvides  # type: ignore[import]
 from jinja2 import Environment, FileSystemLoader  # type: ignore[import]
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase, PebbleReadyEvent, RelationJoinedEvent
@@ -27,6 +28,7 @@ BASE_CONFIG_PATH = "/etc/nrf"
 CONFIG_FILE_NAME = "nrfcfg.yaml"
 DATABASE_NAME = "free5gc"
 NRF_SBI_PORT = 29510
+NRF_URL = f"http://nrf:{NRF_SBI_PORT}"
 
 
 class NRFOperatorCharm(CharmBase):
@@ -39,6 +41,10 @@ class NRFOperatorCharm(CharmBase):
         self._container = self.unit.get_container(self._container_name)
         self._database = DatabaseRequires(
             self, relation_name="database", database_name=DATABASE_NAME
+        )
+        self.nrf_provider = NRFProvides(self, "fiveg-nrf")
+        self.framework.observe(
+            self.on.fiveg_nrf_relation_joined, self._on_fiveg_nrf_relation_joined
         )
         self.framework.observe(self.on.database_relation_joined, self._configure_pebble_layer)
         self.framework.observe(self.on.nrf_pebble_ready, self._configure_pebble_layer)
@@ -81,19 +87,6 @@ class NRFOperatorCharm(CharmBase):
         self._container.push(path=f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}", source=content)
         logger.info(f"Pushed {CONFIG_FILE_NAME} config file")
 
-    @property
-    def _config_file_is_written(self) -> bool:
-        """Returns whether the config file was written to the workload container.
-
-        Returns:
-            bool: Whether the config file was written.
-        """
-        if not self._container.exists(f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}"):
-            logger.info(f"Config file is not written: {CONFIG_FILE_NAME}")
-            return False
-        logger.info("Config file is written")
-        return True
-
     def _configure_pebble_layer(
         self, event: Union[PebbleReadyEvent, RelationJoinedEvent, DatabaseCreatedEvent]
     ) -> None:
@@ -115,6 +108,31 @@ class NRFOperatorCharm(CharmBase):
         self._container.add_layer("nrf", self._pebble_layer, combine=True)
         self._container.replan()
         self.unit.status = ActiveStatus()
+
+    def _on_fiveg_nrf_relation_joined(self, event: RelationJoinedEvent) -> None:
+        """Handle fiveg-nrf relation joined event.
+
+        Args:
+            event: RelationJoinedEvent
+        """
+        if self.unit.is_leader():
+            self.nrf_provider.set_nrf_information(
+                url=NRF_URL,
+                relation_id=event.relation.id,
+            )
+
+    @property
+    def _config_file_is_written(self) -> bool:
+        """Returns whether the config file was written to the workload container.
+
+        Returns:
+            bool: Whether the config file was written.
+        """
+        if not self._container.exists(f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}"):
+            logger.info(f"Config file is not written: {CONFIG_FILE_NAME}")
+            return False
+        logger.info("Config file is written")
+        return True
 
     @property
     def _database_relation_is_created(self) -> bool:
