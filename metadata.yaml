@@ -27,7 +27,7 @@ requires:
 
 provides:  
   fiveg-nrf:
-    interface: fiveg-nrf
+    interface: fiveg_nrf
 
 assumes:
   - k8s-api

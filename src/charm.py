@@ -1,3 +1,4 @@
+src/charm.py
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
@@ -19,7 +20,7 @@ from jinja2 import Environment, FileSystemLoader  # type: ignore[import]
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase, PebbleReadyEvent, RelationJoinedEvent
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus, WaitingStatus, ModelError
 from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
@@ -115,11 +116,12 @@ class NRFOperatorCharm(CharmBase):
         Args:
             event: RelationJoinedEvent
         """
-        if self.unit.is_leader():
-            self.nrf_provider.set_nrf_information(
-                url=NRF_URL,
-                relation_id=event.relation.id,
-            )
+        if not self.unit.is_leader() or not self._nrf_service_is_running:
+            return
+        self.nrf_provider.set_nrf_information(
+            url=NRF_URL,
+            relation_id=event.relation.id,
+        )
 
     @property
     def _config_file_is_written(self) -> bool:
@@ -190,6 +192,17 @@ class NRFOperatorCharm(CharmBase):
             "GRPC_VERBOSITY": "debug",
             "MANAGED_BY_CONFIG_POD": "true",
         }
+
+    @property
+    def _nrf_service_is_running(self) -> bool:
+        """Returns whether the NRF service is running."""
+        if not self._container.can_connect():
+            return False
+        try:
+            service = self._container.get_service(self._service_name)
+        except ModelError:
+            return False
+        return service.is_running()
 
 
 if __name__ == "__main__":
