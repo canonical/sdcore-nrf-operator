@@ -144,7 +144,7 @@ class TestCharm(unittest.TestCase):
             self.harness.model.unit.status, WaitingStatus("Waiting for container to be ready")
         )
 
-    def test_given_nrf_urk_when_fiveg_nrf_relation_joined_then_nrf_url_is_in_relation_databag(  # noqa: E501
+    def test_given_nrf_url_when_fiveg_nrf_relation_joined_then_nrf_url_is_in_relation_databag(  # noqa: E501
         self,
     ):
         self.harness.set_leader(is_leader=True)
