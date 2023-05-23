@@ -1,4 +1,3 @@
-src/charm.py
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
@@ -20,7 +19,7 @@ from jinja2 import Environment, FileSystemLoader  # type: ignore[import]
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase, PebbleReadyEvent, RelationJoinedEvent
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus, ModelError
+from ops.model import ActiveStatus, BlockedStatus, ModelError, WaitingStatus
 from ops.pebble import Layer
 
 logger = logging.getLogger(__name__)
@@ -116,8 +115,12 @@ class NRFOperatorCharm(CharmBase):
         Args:
             event: RelationJoinedEvent
         """
-        if not self.unit.is_leader() or not self._nrf_service_is_running:
+        if not self.unit.is_leader():
             return
+        if not self._nrf_service_is_running:
+            event.defer()
+            return
+        print(self._nrf_service_is_running)
         self.nrf_provider.set_nrf_information(
             url=NRF_URL,
             relation_id=event.relation.id,
