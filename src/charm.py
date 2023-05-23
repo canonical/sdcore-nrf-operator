@@ -29,6 +29,7 @@ CONFIG_FILE_NAME = "nrfcfg.yaml"
 DATABASE_NAME = "free5gc"
 NRF_SBI_PORT = 29510
 NRF_URL = f"http://nrf:{NRF_SBI_PORT}"
+NRF_RELATION_NAME = "fiveg-nrf"
 
 
 class NRFOperatorCharm(CharmBase):
@@ -42,7 +43,7 @@ class NRFOperatorCharm(CharmBase):
         self._database = DatabaseRequires(
             self, relation_name="database", database_name=DATABASE_NAME
         )
-        self.nrf_provider = NRFProvides(self, "fiveg-nrf")
+        self.nrf_provider = NRFProvides(self, NRF_RELATION_NAME)
         self.framework.observe(
             self.on.fiveg_nrf_relation_joined, self._on_fiveg_nrf_relation_joined
         )
@@ -107,6 +108,7 @@ class NRFOperatorCharm(CharmBase):
             return
         self._container.add_layer("nrf", self._pebble_layer, combine=True)
         self._container.replan()
+        self._publish_nrf_info_for_all_requirers(NRF_URL)
         self.unit.status = ActiveStatus()
 
     def _on_fiveg_nrf_relation_joined(self, event: RelationJoinedEvent) -> None:
@@ -118,12 +120,23 @@ class NRFOperatorCharm(CharmBase):
         if not self.unit.is_leader():
             return
         if not self._nrf_service_is_running:
-            event.defer()
             return
         self.nrf_provider.set_nrf_information(
             url=NRF_URL,
             relation_id=event.relation.id,
         )
+
+    def _publish_nrf_info_for_all_requirers(self, url: str) -> None:
+        """Publish nrf information in the databags of all relations requiring it.
+
+        Args:
+            url: URL of the NRF service
+        """
+        if not self.unit.is_leader():
+            return
+        if not self._relation_created(NRF_RELATION_NAME):
+            return
+        self.nrf_provider.set_nrf_information_in_all_relations(url)
 
     @property
     def _config_file_is_written(self) -> bool:
