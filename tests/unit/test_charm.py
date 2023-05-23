@@ -157,7 +157,6 @@ class TestCharm(unittest.TestCase):
         relation_data = self.harness.get_relation_data(
             relation_id=relation_id, app_or_unit=self.harness.charm.app.name
         )
-        print(relation_data)
         self.assertEqual(relation_data, {})
 
     @patch("ops.model.Container.exists")
@@ -180,5 +179,4 @@ class TestCharm(unittest.TestCase):
         relation_data = self.harness.get_relation_data(
             relation_id=relation_id, app_or_unit=self.harness.charm.app.name
         )
-        print(relation_data)
         self.assertEqual(relation_data["url"], "http://nrf:29510")

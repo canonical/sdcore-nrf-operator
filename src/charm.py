@@ -120,7 +120,6 @@ class NRFOperatorCharm(CharmBase):
         if not self._nrf_service_is_running:
             event.defer()
             return
-        print(self._nrf_service_is_running)
         self.nrf_provider.set_nrf_information(
             url=NRF_URL,
             relation_id=event.relation.id,
@@ -198,7 +197,11 @@ class NRFOperatorCharm(CharmBase):
 
     @property
     def _nrf_service_is_running(self) -> bool:
-        """Returns whether the NRF service is running."""
+        """Returns whether the NRF service is running.
+
+        Returns:
+            bool: Whether the NRF service is running.
+        """
         if not self._container.can_connect():
             return False
         try:
