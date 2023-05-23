@@ -119,7 +119,7 @@ class NRFOperatorCharm(CharmBase):
         """
         if not self.unit.is_leader():
             return
-        if not self._nrf_service_is_running:
+        if not self._nrf_service_is_running():
             return
         self.nrf_provider.set_nrf_information(
             url=NRF_URL,
@@ -208,7 +208,6 @@ class NRFOperatorCharm(CharmBase):
             "MANAGED_BY_CONFIG_POD": "true",
         }
 
-    @property
     def _nrf_service_is_running(self) -> bool:
         """Returns whether the NRF service is running.
 
