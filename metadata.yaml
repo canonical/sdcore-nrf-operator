@@ -25,5 +25,9 @@ requires:
   database:
     interface: mongodb_client
 
+provides:  
+  fiveg-nrf:
+    interface: fiveg_nrf
+
 assumes:
   - k8s-api
