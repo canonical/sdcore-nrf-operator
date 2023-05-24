@@ -9,10 +9,10 @@
   </a>
   <br/>
   <br/>
-  <h1>SD-CORE NRF Operator</h1>
+  <h1>SD-Core NRF Operator</h1>
 </div>
 
-Charmed Operator for the SD-CORE Network Repository Function (NRF).
+Charmed Operator for the SD-Core Network Repository Function (NRF).
 
 # Usage
 

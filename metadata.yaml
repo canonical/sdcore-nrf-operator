@@ -1,7 +1,7 @@
 name: sdcore-nrf
-display-name: SD-CORE 5G NRF
-summary: Charmed Operator for the SD-CORE Network Repository Function (NRF).
-description: Charmed Operator for the SD-CORE Network Repository Function (NRF).
+display-name: SD-Core 5G NRF
+summary: Charmed Operator for the SD-Core Network Repository Function (NRF).
+description: Charmed Operator for the SD-Core Network Repository Function (NRF).
 
 containers:
   nrf:
