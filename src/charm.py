@@ -113,7 +113,7 @@ class NRFOperatorCharm(CharmBase):
             self._configure_workload(restart=True)
 
     def _configure_workload(self, restart: bool = False) -> None:
-        """Configures pebble layer for the amf container."""
+        """Configures pebble layer for the nrf container."""
         plan = self._container.get_plan()
         layer = self._pebble_layer
         if plan.services != layer.services or restart:

@@ -133,6 +133,23 @@ class TestCharm(unittest.TestCase):
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
     @patch("ops.model.Container.pull")
+    def test_given_content_of_config_file_not_changed_when_pebble_ready_then_config_file_is_not_pushed(  # noqa: E501
+        self,
+        patch_pull,
+        patch_push,
+        patch_exists,
+    ):
+        patch_pull.side_effect = [
+            StringIO(self._read_file("tests/unit/expected_config/config.conf").strip()),
+        ]
+        patch_exists.return_value = True
+        self._database_is_available()
+        self.harness.container_pebble_ready(container_name="nrf")
+        patch_push.assert_not_called()
+
+    @patch("ops.model.Container.exists")
+    @patch("ops.model.Container.push")
+    @patch("ops.model.Container.pull")
     def test_given_config_pushed_when_pebble_ready_then_pebble_plan_is_applied(
         self,
         patch_pull,
