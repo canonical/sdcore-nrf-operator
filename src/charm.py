@@ -74,7 +74,11 @@ class NRFOperatorCharm(CharmBase):
             self.unit.status = BlockedStatus("Waiting for database relation to be created")
             event.defer()
             return
-        if not self._database_info:
+        if not self._database_is_available():
+            self.unit.status = WaitingStatus("Waiting for the database to be available")
+            event.defer()
+            return
+        if not self._database_info():
             self.unit.status = WaitingStatus("Waiting for database info to be available")
             event.defer()
             return
@@ -84,6 +88,7 @@ class NRFOperatorCharm(CharmBase):
             return
         self._generate_config_file()
         self._configure_workload()
+        self._publish_nrf_info_for_all_requirers(NRF_URL)
         self.unit.status = ActiveStatus()
 
     def _generate_config_file(
@@ -97,7 +102,7 @@ class NRFOperatorCharm(CharmBase):
         to fetch new config.
         """
         content = self._render_config(
-            database_url=self._database_info["uris"].split(",")[0],
+            database_url=self._database_info()["uris"].split(",")[0],
             database_name=DATABASE_NAME,
             nrf_sbi_port=NRF_SBI_PORT,
         )
@@ -114,6 +119,19 @@ class NRFOperatorCharm(CharmBase):
         if plan.services != layer.services or restart:
             self._container.add_layer("nrf", layer, combine=True)
             self._container.restart(self._service_name)
+
+    def _config_file_content_matches(self, content: str) -> bool:
+        """Returns whether the nrfcfg config file content matches the provided content.
+
+        Returns:
+            bool: Whether the nrfcfg config file content matches
+        """
+        if not self._container.exists(path=f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}"):
+            return False
+        existing_content = self._container.pull(path=f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}")
+        if existing_content.read() != content:
+            return False
+        return True
 
     def _on_fiveg_nrf_relation_joined(self, event: RelationJoinedEvent) -> None:
         """Handle fiveg-nrf relation joined event.
@@ -179,7 +197,6 @@ class NRFOperatorCharm(CharmBase):
         self._container.push(path=f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}", source=content)
         logger.info(f"Pushed {CONFIG_FILE_NAME} config file")
 
-    @property
     def _database_is_available(self) -> bool:
         """Returns True if the database is available.
 
@@ -188,14 +205,13 @@ class NRFOperatorCharm(CharmBase):
         """
         return self._database.is_resource_created()
 
-    @property
     def _database_info(self) -> dict:
         """Returns the database data.
 
         Returns:
             Dict: The database data.
         """
-        if not self._database_is_available:
+        if not self._database_is_available():
             raise RuntimeError(f"Database `{DATABASE_NAME}` is not available")
         return self._database.fetch_relation_data()[self._database.relations[0].id]
 

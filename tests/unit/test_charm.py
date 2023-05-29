@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from io import StringIO
 import unittest
 from unittest.mock import patch
 
@@ -53,6 +54,20 @@ class TestCharm(unittest.TestCase):
             },
         )
 
+    @staticmethod
+    def _read_file(path: str) -> str:
+        """Reads a file and returns as a string.
+
+        Args:
+            path (str): path to the file.
+
+        Returns:
+            str: content of the file.
+        """
+        with open(path, "r") as f:
+            content = f.read()
+        return content
+
     def test_given_container_not_ready_when_database_relation_joins_then_status_is_waiting(
         self,
     ):
@@ -71,9 +86,12 @@ class TestCharm(unittest.TestCase):
             BlockedStatus("Waiting for database relation to be created"),
         )
 
+    @patch("charms.data_platform_libs.v0.data_interfaces.DatabaseRequires.is_resource_created")
     def test_given_database_information_not_available_when_pebble_ready_then_status_is_waiting(
         self,
+        patch_is_resource_created,
     ):
+        patch_is_resource_created.return_value = True
         self._create_database_relation()
         self.harness.container_pebble_ready(container_name="nrf")
         self.assertEqual(
@@ -94,11 +112,14 @@ class TestCharm(unittest.TestCase):
 
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
+    @patch("ops.model.Container.pull")
     def test_given_database_info_and_storage_attached_when_pebble_ready_then_config_file_is_rendered_and_pushed(  # noqa: E501
         self,
+        patch_pull,
         patch_push,
         patch_exists,
     ):
+        patch_pull.return_value = StringIO("dummy")
         patch_exists.return_value = True
         self._database_is_available()
         self.harness.container_pebble_ready(container_name="nrf")
@@ -111,26 +132,16 @@ class TestCharm(unittest.TestCase):
 
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
-    def test_given_config_file_push_unsuccessful_when_pebble_ready_then_status_is_waiting(
-        self,
-        patch_push,
-        patch_exists,
-    ):
-        patch_exists.side_effect = [True, False]
-        self._database_is_available()
-        self.harness.container_pebble_ready(container_name="nrf")
-        self.assertEqual(
-            self.harness.model.unit.status,
-            WaitingStatus("Waiting for config file to be written"),
-        )
-
-    @patch("ops.model.Container.exists")
-    @patch("ops.model.Container.push")
+    @patch("ops.model.Container.pull")
     def test_given_config_pushed_when_pebble_ready_then_pebble_plan_is_applied(
         self,
+        patch_pull,
         patch_push,
         patch_exists,
     ):
+        patch_pull.return_value = StringIO(
+            self._read_file("tests/unit/expected_config/config.conf").strip()
+        )
         patch_exists.return_value = True
 
         self._database_is_available()
@@ -158,13 +169,18 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(expected_plan, updated_plan)
 
+    @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
     def test_given_database_relation_is_created_and_config_file_is_written_when_pebble_ready_then_status_is_active(  # noqa: E501
         self,
         patch_push,
         patch_exists,
+        patch_pull,
     ):
+        patch_pull.return_value = StringIO(
+            self._read_file("tests/unit/expected_config/config.conf").strip()
+        )
         patch_exists.return_value = True
 
         self._database_is_available()
@@ -179,7 +195,7 @@ class TestCharm(unittest.TestCase):
         self, patch_exists
     ):
         patch_exists.return_value = True
-        self.create_database_relation()
+        self._create_database_relation()
 
         self.harness.set_can_connect(container="nrf", val=False)
 
@@ -202,13 +218,17 @@ class TestCharm(unittest.TestCase):
         )
         self.assertEqual(relation_data, {})
 
+    @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
     def test_given_unit_is_not_leader_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
-        self, patch_exists
+        self, patch_exists, patch_pull
     ):
         patch_exists.return_value = True
+        patch_pull.return_value = StringIO(
+            self._read_file("tests/unit/expected_config/config.conf").strip()
+        )
 
-        self.create_database_relation()
+        self._database_is_available()
 
         self.harness.set_can_connect(container="nrf", val=True)
         self.harness.set_leader(is_leader=False)
@@ -224,13 +244,17 @@ class TestCharm(unittest.TestCase):
         )
         self.assertEqual(relation_data, {})
 
+    @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
     def test_given_nrf_url_and_service_is_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_in_relation_databag(  # noqa: E501
-        self, patch_exists
+        self, patch_exists, patch_pull
     ):
         patch_exists.return_value = True
+        patch_pull.return_value = StringIO(
+            self._read_file("tests/unit/expected_config/config.conf").strip()
+        )
 
-        self.create_database_relation()
+        self._database_is_available()
 
         self.harness.set_can_connect(container="nrf", val=True)
         self.harness.set_leader(is_leader=True)
@@ -246,25 +270,37 @@ class TestCharm(unittest.TestCase):
         )
         self.assertEqual(relation_data["url"], "http://nrf:29510")
 
+    @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
     def test_service_starts_running_after_nrf_relation_joined_when_fiveg_pebble_ready_then_nrf_url_is_in_relation_databag(  # noqa: E501
-        self, patch_exists
+        self, patch_exists, patch_pull
     ):
-        self.harness.set_can_connect(container="nrf", val=True)
+        patch_exists.return_value = True
+        patch_pull.side_effect = [
+            StringIO(self._read_file("tests/unit/expected_config/config.conf").strip()),
+            StringIO(self._read_file("tests/unit/expected_config/config.conf").strip()),
+        ]
+
+        self.harness.set_can_connect(container="nrf", val=False)
+
         self.harness.set_leader(is_leader=True)
+
         relation_id = self.harness.add_relation(
             relation_name="fiveg-nrf",
             remote_app="nrf-requirer",
         )
+
         self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
+
         relation_data = self.harness.get_relation_data(
             relation_id=relation_id, app_or_unit=self.harness.charm.app.name
         )
+
         self.assertEqual(relation_data, {})
 
-        patch_exists.return_value = True
+        self.harness.set_can_connect(container="nrf", val=True)
 
-        self.create_database_relation()
+        self._database_is_available()
 
         self.harness.container_pebble_ready("nrf")
 
