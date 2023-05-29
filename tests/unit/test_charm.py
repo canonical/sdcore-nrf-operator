@@ -1,8 +1,8 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from io import StringIO
 import unittest
+from io import StringIO
 from unittest.mock import patch
 
 from ops import testing
@@ -68,22 +68,22 @@ class TestCharm(unittest.TestCase):
             content = f.read()
         return content
 
-    def test_given_container_not_ready_when_database_relation_joins_then_status_is_waiting(
-        self,
-    ):
-        self.harness.set_can_connect(container="nrf", val=False)
-        self._create_database_relation()
-
-        self.assertEqual(
-            self.harness.model.unit.status, WaitingStatus("Waiting for container to be ready")
-        )
-
     def test_given_database_relation_not_created_when_pebble_ready_then_status_is_blocked(self):
         self.harness.container_pebble_ready(container_name="nrf")
 
         self.assertEqual(
             self.harness.model.unit.status,
             BlockedStatus("Waiting for database relation to be created"),
+        )
+
+    def test_given_database_not_available_when_pebble_ready_then_status_is_waiting(
+        self,
+    ):
+        self._create_database_relation()
+        self.harness.container_pebble_ready(container_name="nrf")
+        self.assertEqual(
+            self.harness.model.unit.status,
+            WaitingStatus("Waiting for the database to be available"),
         )
 
     @patch("charms.data_platform_libs.v0.data_interfaces.DatabaseRequires.is_resource_created")
@@ -189,19 +189,6 @@ class TestCharm(unittest.TestCase):
         self.harness.container_pebble_ready("nrf")
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
-
-    @patch("ops.model.Container.exists")
-    def test_given_container_not_ready_when_database_relation_joins_then_status_is_waiting(
-        self, patch_exists
-    ):
-        patch_exists.return_value = True
-        self._create_database_relation()
-
-        self.harness.set_can_connect(container="nrf", val=False)
-
-        self.assertEqual(
-            self.harness.model.unit.status, WaitingStatus("Waiting for container to be ready")
-        )
 
     def test_given_service_is_not_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
         self,
