@@ -173,3 +173,102 @@ class TestCharm(unittest.TestCase):
         self.harness.container_pebble_ready("nrf")
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
+
+    @patch("ops.model.Container.exists")
+    def test_given_container_not_ready_when_database_relation_joins_then_status_is_waiting(
+        self, patch_exists
+    ):
+        patch_exists.return_value = True
+        self.create_database_relation()
+
+        self.harness.set_can_connect(container="nrf", val=False)
+
+        self.assertEqual(
+            self.harness.model.unit.status, WaitingStatus("Waiting for container to be ready")
+        )
+
+    def test_given_service_is_not_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
+        self,
+    ):
+        self.harness.set_can_connect(container="nrf", val=True)
+        self.harness.set_leader(is_leader=True)
+        relation_id = self.harness.add_relation(
+            relation_name="fiveg-nrf",
+            remote_app="nrf-requirer",
+        )
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
+        relation_data = self.harness.get_relation_data(
+            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_data, {})
+
+    @patch("ops.model.Container.exists")
+    def test_given_unit_is_not_leader_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
+        self, patch_exists
+    ):
+        patch_exists.return_value = True
+
+        self.create_database_relation()
+
+        self.harness.set_can_connect(container="nrf", val=True)
+        self.harness.set_leader(is_leader=False)
+        self.harness.container_pebble_ready("nrf")
+
+        relation_id = self.harness.add_relation(
+            relation_name="fiveg-nrf",
+            remote_app="nrf-requirer",
+        )
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
+        relation_data = self.harness.get_relation_data(
+            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_data, {})
+
+    @patch("ops.model.Container.exists")
+    def test_given_nrf_url_and_service_is_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_in_relation_databag(  # noqa: E501
+        self, patch_exists
+    ):
+        patch_exists.return_value = True
+
+        self.create_database_relation()
+
+        self.harness.set_can_connect(container="nrf", val=True)
+        self.harness.set_leader(is_leader=True)
+        self.harness.container_pebble_ready("nrf")
+
+        relation_id = self.harness.add_relation(
+            relation_name="fiveg-nrf",
+            remote_app="nrf-requirer",
+        )
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
+        relation_data = self.harness.get_relation_data(
+            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_data["url"], "http://nrf:29510")
+
+    @patch("ops.model.Container.exists")
+    def test_service_starts_running_after_nrf_relation_joined_when_fiveg_pebble_ready_then_nrf_url_is_in_relation_databag(  # noqa: E501
+        self, patch_exists
+    ):
+        self.harness.set_can_connect(container="nrf", val=True)
+        self.harness.set_leader(is_leader=True)
+        relation_id = self.harness.add_relation(
+            relation_name="fiveg-nrf",
+            remote_app="nrf-requirer",
+        )
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
+        relation_data = self.harness.get_relation_data(
+            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_data, {})
+
+        patch_exists.return_value = True
+
+        self.create_database_relation()
+
+        self.harness.container_pebble_ready("nrf")
+
+        relation_data = self.harness.get_relation_data(
+            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_data["url"], "http://nrf:29510")
