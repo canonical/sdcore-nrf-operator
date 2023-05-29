@@ -4,9 +4,9 @@
 name: fiveg-nrf-provider
 
 description: |
-  Dummy 5G NRF provider charm.
+  Dummy SD-Core NRF provider charm.
 summary: |
-  Dummy 5G NRF provider charm.
+  Dummy SD-Core NRF provider charm.
 
 provides:
   fiveg-nrf:

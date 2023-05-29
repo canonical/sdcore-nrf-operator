@@ -2,7 +2,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charmed operator for the 5G NRF service."""
+"""Charmed operator for the SD-Core NRF service."""
 
 import logging
 from typing import Union
@@ -34,7 +34,7 @@ NRF_RELATION_NAME = "fiveg-nrf"
 
 
 class NRFOperatorCharm(CharmBase):
-    """Main class to describe juju event handling for the 5G NRF operator."""
+    """Main class to describe juju event handling for the SD-Core NRF operator."""
 
     def __init__(self, *args):
         """Initialize charm."""
