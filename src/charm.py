@@ -5,19 +5,15 @@
 """Charmed operator for the SD-Core NRF service."""
 
 import logging
-from typing import Union
 
-from charms.data_platform_libs.v0.data_interfaces import (  # type: ignore[import]
-    DatabaseCreatedEvent,
-    DatabaseRequires,
-)
+from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires  # type: ignore[import]
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
     KubernetesServicePatch,
 )
 from charms.sdcore_nrf.v0.fiveg_nrf import NRFProvides  # type: ignore[import]
 from jinja2 import Environment, FileSystemLoader  # type: ignore[import]
 from lightkube.models.core_v1 import ServicePort
-from ops.charm import CharmBase, PebbleReadyEvent, RelationJoinedEvent
+from ops.charm import CharmBase, EventBase, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, ModelError, WaitingStatus
 from ops.pebble import Layer
@@ -31,6 +27,21 @@ NRF_SBI_PORT = 29510
 DATABASE_RELATION_NAME = "database"
 NRF_URL = f"http://nrf:{NRF_SBI_PORT}"
 NRF_RELATION_NAME = "fiveg-nrf"
+
+
+def _render_config(
+    database_name: str,
+    database_url: str,
+    nrf_sbi_port: int,
+) -> str:
+    jinja2_environment = Environment(loader=FileSystemLoader("src/templates/"))
+    template = jinja2_environment.get_template("nrfcfg.yaml.j2")
+    content = template.render(
+        database_name=database_name,
+        database_url=database_url,
+        nrf_sbi_port=nrf_sbi_port,
+    )
+    return content
 
 
 class NRFOperatorCharm(CharmBase):
@@ -58,9 +69,7 @@ class NRFOperatorCharm(CharmBase):
             ],
         )
 
-    def _configure_nrf(
-        self, event: Union[PebbleReadyEvent, RelationJoinedEvent, DatabaseCreatedEvent]
-    ) -> None:
+    def _configure_nrf(self, event: EventBase) -> None:
         """Adds pebble layer and manages Juju unit status.
 
         Args:
@@ -86,22 +95,25 @@ class NRFOperatorCharm(CharmBase):
             self.unit.status = WaitingStatus("Waiting for storage to be attached")
             event.defer()
             return
-        self._generate_config_file()
-        self._configure_workload()
+        needs_restart = self._generate_config_file()
+        self._configure_workload(restart=needs_restart)
         self._publish_nrf_info_for_all_requirers(NRF_URL)
         self.unit.status = ActiveStatus()
 
     def _generate_config_file(
         self,
-    ) -> None:
+    ) -> bool:
         """Handles creation of the NRF config file.
 
         Generates NRF config file based on a given template.
         Pushes NRF config file to the workload.
         Calls `_configure_workload` function to forcibly restart the NRF service in order
         to fetch new config.
+
+        Returns:
+            bool: Whether the config file was updated so the service should be restarted.
         """
-        content = self._render_config(
+        content = _render_config(
             database_url=self._database_info()["uris"].split(",")[0],
             database_name=DATABASE_NAME,
             nrf_sbi_port=NRF_SBI_PORT,
@@ -110,7 +122,8 @@ class NRFOperatorCharm(CharmBase):
             self._push_config_file(
                 content=content,
             )
-            self._configure_workload(restart=True)
+            return True
+        return False
 
     def _configure_workload(self, restart: bool = False) -> None:
         """Configures pebble layer for the nrf container."""
@@ -171,21 +184,6 @@ class NRFOperatorCharm(CharmBase):
         """
         return bool(self.model.get_relation(relation_name))
 
-    @staticmethod
-    def _render_config(
-        database_name: str,
-        database_url: str,
-        nrf_sbi_port: int,
-    ) -> str:
-        jinja2_environment = Environment(loader=FileSystemLoader("src/templates/"))
-        template = jinja2_environment.get_template("nrfcfg.yaml.j2")
-        content = template.render(
-            database_name=database_name,
-            database_url=database_url,
-            nrf_sbi_port=nrf_sbi_port,
-        )
-        return content
-
     def _push_config_file(self, content: str) -> None:
         """Pushes config file to workload.
 
@@ -195,7 +193,7 @@ class NRFOperatorCharm(CharmBase):
         if not self._container.can_connect():
             return
         self._container.push(path=f"{BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}", source=content)
-        logger.info(f"Pushed {CONFIG_FILE_NAME} config file")
+        logger.info("Pushed %s config file", CONFIG_FILE_NAME)
 
     def _database_is_available(self) -> bool:
         """Returns True if the database is available.
