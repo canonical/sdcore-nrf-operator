@@ -207,25 +207,32 @@ class TestCharm(unittest.TestCase):
     def test_service_starts_running_after_nrf_relation_joined_when_fiveg_pebble_ready_then_nrf_url_is_in_relation_databag(  # noqa: E501
         self, patch_exists
     ):
+        patch_exists.return_value = True
         self.harness.set_can_connect(container="nrf", val=True)
         self.harness.set_leader(is_leader=True)
-        relation_id = self.harness.add_relation(
+        relation_1_id = self.harness.add_relation(
             relation_name="fiveg-nrf",
-            remote_app="nrf-requirer",
+            remote_app="nrf-requirer-1",
         )
-        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        relation_2_id = self.harness.add_relation(
+            relation_name="fiveg-nrf",
+            remote_app="nrf-requirer-2",
         )
-        self.assertEqual(relation_data, {})
-
-        patch_exists.return_value = True
-
+        self.harness.add_relation_unit(
+            relation_id=relation_1_id, remote_unit_name="nrf-requirer-1/0"
+        )
+        self.harness.add_relation_unit(
+            relation_id=relation_2_id, remote_unit_name="nrf-requirer-2/0"
+        )
         self.create_database_relation()
 
         self.harness.container_pebble_ready("nrf")
 
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        relation_1_data = self.harness.get_relation_data(
+            relation_id=relation_1_id, app_or_unit=self.harness.charm.app.name
         )
-        self.assertEqual(relation_data["url"], "http://nrf:29510")
+        relation_2_data = self.harness.get_relation_data(
+            relation_id=relation_2_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_1_data["url"], "http://nrf:29510")
+        self.assertEqual(relation_2_data["url"], "http://nrf:29510")
