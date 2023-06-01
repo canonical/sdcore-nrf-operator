@@ -169,7 +169,7 @@ class NRFOperatorCharm(CharmBase):
         Returns:
             bool: Whether the relation was created.
         """
-        return len(self.model.relations[relation_name]) >= 1
+        return bool(self.model.relations[relation_name])
 
     @property
     def _pebble_layer(self) -> Layer:
