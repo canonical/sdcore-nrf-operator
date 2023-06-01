@@ -5,6 +5,8 @@
 """Charmed operator for the SD-Core NRF service."""
 
 import logging
+from ipaddress import IPv4Address
+from subprocess import check_output
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires  # type: ignore[import]
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
@@ -29,17 +31,39 @@ NRF_URL = f"http://nrf:{NRF_SBI_PORT}"
 NRF_RELATION_NAME = "fiveg-nrf"
 
 
+def _get_pod_ip() -> str:
+    """Returns the pod IP using juju client.
+
+    Returns:
+        str: The pod IP.
+    """
+    return str(IPv4Address(check_output(["unit-get", "private-address"]).decode().strip()))
+
+
 def _render_config(
     database_name: str,
     database_url: str,
+    nrf_ip: str,
     nrf_sbi_port: int,
 ) -> str:
+    """Renders the nrfcfg config file.
+
+    Args:
+        database_name: Name of the database
+        database_url: URL of the database
+        nrf_ip: IP of the NRF service
+        nrf_sbi_port: Port of the NRF service
+
+    Returns:
+        str: Rendered config file content
+    """
     jinja2_environment = Environment(loader=FileSystemLoader("src/templates/"))
     template = jinja2_environment.get_template("nrfcfg.yaml.j2")
     content = template.render(
         database_name=database_name,
         database_url=database_url,
         nrf_sbi_port=nrf_sbi_port,
+        nrf_ip=nrf_ip,
     )
     return content
 
@@ -115,6 +139,7 @@ class NRFOperatorCharm(CharmBase):
         """
         content = _render_config(
             database_url=self._database_info()["uris"].split(",")[0],
+            nrf_ip=_get_pod_ip(),
             database_name=DATABASE_NAME,
             nrf_sbi_port=NRF_SBI_PORT,
         )

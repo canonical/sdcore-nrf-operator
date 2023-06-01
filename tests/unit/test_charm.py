@@ -113,12 +113,15 @@ class TestCharm(unittest.TestCase):
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
     @patch("ops.model.Container.pull")
+    @patch("charm.check_output")
     def test_given_database_info_and_storage_attached_when_pebble_ready_then_config_file_is_rendered_and_pushed(  # noqa: E501
         self,
+        patch_check_output,
         patch_pull,
         patch_push,
         patch_exists,
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_pull.return_value = StringIO("dummy")
         patch_exists.return_value = True
         self._database_is_available()
@@ -133,12 +136,15 @@ class TestCharm(unittest.TestCase):
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
     @patch("ops.model.Container.pull")
+    @patch("charm.check_output")
     def test_given_content_of_config_file_not_changed_when_pebble_ready_then_config_file_is_not_pushed(  # noqa: E501
         self,
+        patch_check_output,
         patch_pull,
         patch_push,
         patch_exists,
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_pull.side_effect = [
             StringIO(self._read_file("tests/unit/expected_config/config.conf").strip()),
         ]
@@ -150,12 +156,15 @@ class TestCharm(unittest.TestCase):
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
     @patch("ops.model.Container.pull")
+    @patch("charm.check_output")
     def test_given_config_pushed_when_pebble_ready_then_pebble_plan_is_applied(
         self,
+        patch_check_output,
         patch_pull,
         patch_push,
         patch_exists,
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_pull.return_value = StringIO(
             self._read_file("tests/unit/expected_config/config.conf").strip()
         )
@@ -189,12 +198,15 @@ class TestCharm(unittest.TestCase):
     @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
     @patch("ops.model.Container.push")
+    @patch("charm.check_output")
     def test_given_database_relation_is_created_and_config_file_is_written_when_pebble_ready_then_status_is_active(  # noqa: E501
         self,
+        patch_check_output,
         patch_push,
         patch_exists,
         patch_pull,
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_pull.return_value = StringIO(
             self._read_file("tests/unit/expected_config/config.conf").strip()
         )
@@ -224,9 +236,11 @@ class TestCharm(unittest.TestCase):
 
     @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
+    @patch("charm.check_output")
     def test_given_unit_is_not_leader_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
-        self, patch_exists, patch_pull
+        self, patch_check_output, patch_exists, patch_pull
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_exists.return_value = True
         patch_pull.return_value = StringIO(
             self._read_file("tests/unit/expected_config/config.conf").strip()
@@ -250,9 +264,11 @@ class TestCharm(unittest.TestCase):
 
     @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
+    @patch("charm.check_output")
     def test_given_nrf_url_and_service_is_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_in_relation_databag(  # noqa: E501
-        self, patch_exists, patch_pull
+        self, patch_check_output, patch_exists, patch_pull
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_exists.return_value = True
         patch_pull.return_value = StringIO(
             self._read_file("tests/unit/expected_config/config.conf").strip()
@@ -276,9 +292,11 @@ class TestCharm(unittest.TestCase):
 
     @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
+    @patch("charm.check_output")
     def test_service_starts_running_after_nrf_relation_joined_when_fiveg_pebble_ready_then_nrf_url_is_in_relation_databag(  # noqa: E501
-        self, patch_exists, patch_pull
+        self, patch_check_output, patch_exists, patch_pull
     ):
+        patch_check_output.return_value = b"1.1.1.1"
         patch_exists.return_value = True
         patch_pull.side_effect = [
             StringIO(self._read_file("tests/unit/expected_config/config.conf").strip()),
