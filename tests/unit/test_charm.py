@@ -96,7 +96,7 @@ class TestCharm(unittest.TestCase):
         self.harness.container_pebble_ready(container_name="nrf")
         self.assertEqual(
             self.harness.model.unit.status,
-            WaitingStatus("Waiting for database info to be available"),
+            WaitingStatus("Waiting for database URI"),
         )
 
     def test_given_storage_not_attached_when_pebble_ready_then_status_is_waiting(

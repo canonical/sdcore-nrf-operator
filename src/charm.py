@@ -105,14 +105,12 @@ class NRFOperatorCharm(CharmBase):
             return
         if not self._relation_created(DATABASE_RELATION_NAME):
             self.unit.status = BlockedStatus("Waiting for database relation to be created")
-            event.defer()
             return
         if not self._database_is_available():
             self.unit.status = WaitingStatus("Waiting for the database to be available")
-            event.defer()
             return
-        if not self._database_info():
-            self.unit.status = WaitingStatus("Waiting for database info to be available")
+        if not self._get_database_uri():
+            self.unit.status = WaitingStatus("Waiting for database URI")
             event.defer()
             return
         if not self._container.exists(path=BASE_CONFIG_PATH):
@@ -124,9 +122,7 @@ class NRFOperatorCharm(CharmBase):
         self._publish_nrf_info_for_all_requirers(NRF_URL)
         self.unit.status = ActiveStatus()
 
-    def _generate_config_file(
-        self,
-    ) -> bool:
+    def _generate_config_file(self) -> bool:
         """Handles creation of the NRF config file.
 
         Generates NRF config file based on a given template.
@@ -237,6 +233,17 @@ class NRFOperatorCharm(CharmBase):
         if not self._database_is_available():
             raise RuntimeError(f"Database `{DATABASE_NAME}` is not available")
         return self._database.fetch_relation_data()[self._database.relations[0].id]
+
+    def _get_database_uri(self) -> str:
+        """Returns the database URI.
+
+        Returns:
+            str: The database URI.
+        """
+        try:
+            return self._database_info()["uris"].split(",")[0]
+        except KeyError:
+            return ""
 
     @property
     def _pebble_layer(self) -> Layer:
