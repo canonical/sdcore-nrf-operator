@@ -4,9 +4,9 @@
 name: fiveg-nrf-requirer
 
 description: |
-  Dummy 5G NRF requirer charm.
+  Dummy SD-Core NRF requirer charm.
 summary: |
-  Dummy 5G NRF requirer charm.
+  Dummy SD-Core NRF requirer charm.
 
 requires:
   fiveg-nrf:

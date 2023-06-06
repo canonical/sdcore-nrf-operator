@@ -1,5 +1,5 @@
 name: sdcore-nrf
-display-name: SD-Core 5G NRF
+display-name: SD-Core NRF
 summary: Charmed Operator for the SD-Core Network Repository Function (NRF).
 description: Charmed Operator for the SD-Core Network Repository Function (NRF).
 
@@ -13,7 +13,7 @@ containers:
 resources:
   nrf-image:
     type: oci-image
-    description: OCI image for 5G nrf
+    description: OCI image for SD-Core nrf
     upstream-source: omecproject/5gc-nrf:master-b747b98
 
 storage:
