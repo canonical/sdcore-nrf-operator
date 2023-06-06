@@ -203,7 +203,7 @@ class NRFOperatorCharm(CharmBase):
         Returns:
             bool: Whether the relation was created.
         """
-        return bool(self.model.get_relation(relation_name))
+        return bool(self.model.relations[relation_name])
 
     def _push_config_file(self, content: str) -> None:
         """Pushes config file to workload.

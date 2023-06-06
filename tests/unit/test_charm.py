@@ -307,26 +307,31 @@ class TestCharm(unittest.TestCase):
 
         self.harness.set_leader(is_leader=True)
 
-        relation_id = self.harness.add_relation(
+        relation_1_id = self.harness.add_relation(
             relation_name="fiveg-nrf",
-            remote_app="nrf-requirer",
+            remote_app="nrf-requirer-1",
         )
 
-        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
-
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        relation_2_id = self.harness.add_relation(
+            relation_name="fiveg-nrf",
+            remote_app="nrf-requirer-2",
         )
-
-        self.assertEqual(relation_data, {})
-
-        self.harness.set_can_connect(container="nrf", val=True)
+        self.harness.add_relation_unit(
+            relation_id=relation_1_id, remote_unit_name="nrf-requirer-1/0"
+        )
+        self.harness.add_relation_unit(
+            relation_id=relation_2_id, remote_unit_name="nrf-requirer-2/0"
+        )
 
         self._database_is_available()
 
         self.harness.container_pebble_ready("nrf")
 
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
+        relation_1_data = self.harness.get_relation_data(
+            relation_id=relation_1_id, app_or_unit=self.harness.charm.app.name
         )
-        self.assertEqual(relation_data["url"], "http://nrf:29510")
+        relation_2_data = self.harness.get_relation_data(
+            relation_id=relation_2_id, app_or_unit=self.harness.charm.app.name
+        )
+        self.assertEqual(relation_1_data["url"], "http://nrf:29510")
+        self.assertEqual(relation_2_data["url"], "http://nrf:29510")
