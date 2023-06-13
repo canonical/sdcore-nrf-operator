@@ -219,6 +219,33 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
+    @patch("ops.model.Container.pull")
+    @patch("ops.model.Container.exists")
+    @patch("ops.model.Container.push")
+    @patch("charm.check_output")
+    def test_given_ip_not_available_when_pebble_ready_then_status_is_waiting(
+        self,
+        patch_check_output,
+        patch_push,
+        patch_exists,
+        patch_pull,
+    ):
+        patch_check_output.return_value = b""
+        patch_pull.return_value = StringIO(
+            self._read_file("tests/unit/expected_config/config.conf").strip()
+        )
+        patch_exists.return_value = True
+
+        self._database_is_available()
+
+        self.harness.container_pebble_ready(container_name="nrf")
+        self.harness.container_pebble_ready("nrf")
+
+        self.assertEqual(
+            self.harness.model.unit.status,
+            WaitingStatus("Waiting for pod IP address to be available"),
+        )
+
     def test_given_service_is_not_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
         self,
     ):
