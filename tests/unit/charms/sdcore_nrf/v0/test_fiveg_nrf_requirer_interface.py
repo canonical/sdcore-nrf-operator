@@ -79,12 +79,12 @@ class TestFiveGNRFRequirer(unittest.TestCase):
         relation_id = self._create_relation(remote_app_name=self.remote_app_name)
         relation_data = {"pizza": "steak"}
 
-        with self.assertLogs() as log:
+        with self.assertLogs(level="DEBUG") as log:
             self.harness.update_relation_data(
                 relation_id=relation_id, app_or_unit=self.remote_app_name, key_values=relation_data
             )
             self.assertIn(
-                f"ERROR:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
+                f"DEBUG:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
                 log.output,
             )
 
@@ -109,14 +109,14 @@ class TestFiveGNRFRequirer(unittest.TestCase):
         relation_id = self._create_relation(remote_app_name=self.remote_app_name)
         relation_data = {}
 
-        with self.assertLogs() as log:
+        with self.assertLogs(level="DEBUG") as log:
             self.harness.update_relation_data(
                 relation_id=relation_id, app_or_unit=self.remote_app_name, key_values=relation_data
             )
             nrf_url = self.harness.charm.nrf_requirer.nrf_url
             self.assertIsNone(nrf_url)
             self.assertIn(
-                f"ERROR:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
+                f"DEBUG:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
                 log.output,
             )
 
@@ -126,13 +126,13 @@ class TestFiveGNRFRequirer(unittest.TestCase):
         relation_id = self._create_relation(remote_app_name=self.remote_app_name)
         relation_data = {"pizza": "steak"}
 
-        with self.assertLogs() as log:
+        with self.assertLogs(level="DEBUG") as log:
             self.harness.update_relation_data(
                 relation_id=relation_id, app_or_unit=self.remote_app_name, key_values=relation_data
             )
             nrf_url = self.harness.charm.nrf_requirer.nrf_url
             self.assertIsNone(nrf_url)
             self.assertIn(
-                f"ERROR:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
+                f"DEBUG:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
                 log.output,
             )
