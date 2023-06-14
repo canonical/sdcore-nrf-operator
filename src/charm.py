@@ -7,6 +7,7 @@
 import logging
 from ipaddress import IPv4Address
 from subprocess import check_output
+from typing import Optional
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires  # type: ignore[import]
 from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ignore[import]
@@ -31,13 +32,14 @@ NRF_URL = f"http://nrf:{NRF_SBI_PORT}"
 NRF_RELATION_NAME = "fiveg-nrf"
 
 
-def _get_pod_ip() -> str:
+def _get_pod_ip() -> Optional[str]:
     """Returns the pod IP using juju client.
 
     Returns:
         str: The pod IP.
     """
-    return str(IPv4Address(check_output(["unit-get", "private-address"]).decode().strip()))
+    ip_address = check_output(["unit-get", "private-address"])
+    return str(IPv4Address(ip_address.decode().strip())) if ip_address else None
 
 
 def _render_config(
@@ -117,6 +119,10 @@ class NRFOperatorCharm(CharmBase):
             self.unit.status = WaitingStatus("Waiting for storage to be attached")
             event.defer()
             return
+        if not _get_pod_ip():
+            self.unit.status = WaitingStatus("Waiting for pod IP address to be available")
+            event.defer()
+            return
         needs_restart = self._generate_config_file()
         self._configure_workload(restart=needs_restart)
         self._publish_nrf_info_for_all_requirers(NRF_URL)
@@ -135,7 +141,7 @@ class NRFOperatorCharm(CharmBase):
         """
         content = _render_config(
             database_url=self._database_info()["uris"].split(",")[0],
-            nrf_ip=_get_pod_ip(),
+            nrf_ip=_get_pod_ip(),  # type: ignore[arg-type]
             database_name=DATABASE_NAME,
             nrf_sbi_port=NRF_SBI_PORT,
         )
