@@ -24,4 +24,4 @@ juju relate sdcore-nrf:database mongodb-k8s
 
 # Image
 
-- **nrf**: `omecproject/5gc-nrf:master-b747b98`
+- **nrf**: `ghcr.io/canonical/sdcore-nrf:1.3`

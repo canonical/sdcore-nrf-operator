@@ -266,7 +266,7 @@ class NRFOperatorCharm(CharmBase):
                     "nrf": {
                         "override": "replace",
                         "startup": "enabled",
-                        "command": f"/free5gc/nrf/nrf --nrfcfg {BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}",  # noqa: E501
+                        "command": f"/bin/nrf --nrfcfg {BASE_CONFIG_PATH}/{CONFIG_FILE_NAME}",  # noqa: E501
                         "environment": self._environment_variables,
                     },
                 },
