@@ -14,6 +14,13 @@ from charms.observability_libs.v1.kubernetes_service_patch import (  # type: ign
     KubernetesServicePatch,
 )
 from charms.sdcore_nrf.v0.fiveg_nrf import NRFProvides  # type: ignore[import]
+from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ignore[import]
+    CertificateAvailableEvent,
+    CertificateExpiringEvent,
+    TLSCertificatesRequiresV2,
+    generate_csr,
+    generate_private_key,
+)
 from jinja2 import Environment, FileSystemLoader  # type: ignore[import]
 from lightkube.models.core_v1 import ServicePort
 from ops.charm import CharmBase, EventBase, RelationJoinedEvent
@@ -28,8 +35,12 @@ CONFIG_FILE_NAME = "nrfcfg.yaml"
 DATABASE_NAME = "free5gc"
 NRF_SBI_PORT = 29510
 DATABASE_RELATION_NAME = "database"
-NRF_URL = f"http://nrf:{NRF_SBI_PORT}"
 NRF_RELATION_NAME = "fiveg-nrf"
+CERTS_DIR_PATH = "/free5gc/support/TLS"  # Certificate paths are hardcoded in NRF code
+PRIVATE_KEY_NAME = "nrf.key"
+CSR_NAME = "nrf.csr"
+CERTIFICATE_NAME = "nrf.pem"
+CERTIFICATE_COMMON_NAME = "nrf.sdcore"
 
 
 def _get_pod_ip() -> Optional[str]:
@@ -47,6 +58,7 @@ def _render_config(
     database_url: str,
     nrf_ip: str,
     nrf_sbi_port: int,
+    scheme: str,
 ) -> str:
     """Renders the nrfcfg config file.
 
@@ -66,6 +78,7 @@ def _render_config(
         database_url=database_url,
         nrf_sbi_port=nrf_sbi_port,
         nrf_ip=nrf_ip,
+        scheme=scheme,
     )
     return content
 
@@ -81,18 +94,35 @@ class NRFOperatorCharm(CharmBase):
         self._database = DatabaseRequires(
             self, relation_name=DATABASE_RELATION_NAME, database_name=DATABASE_NAME
         )
-        self.framework.observe(self.on.database_relation_joined, self._configure_nrf)
-        self.framework.observe(self.on.nrf_pebble_ready, self._configure_nrf)
-        self.framework.observe(self._database.on.database_created, self._configure_nrf)
         self.nrf_provider = NRFProvides(self, NRF_RELATION_NAME)
-        self.framework.observe(
-            self.on.fiveg_nrf_relation_joined, self._on_fiveg_nrf_relation_joined
-        )
+        self._certificates = TLSCertificatesRequiresV2(self, "certificates")
+
         self._service_patcher = KubernetesServicePatch(
             charm=self,
             ports=[
                 ServicePort(name="sbi", port=NRF_SBI_PORT),
             ],
+        )
+        self.framework.observe(self.on.database_relation_joined, self._configure_nrf)
+        self.framework.observe(self.on.nrf_pebble_ready, self._configure_nrf)
+        self.framework.observe(self._database.on.database_created, self._configure_nrf)
+        self.framework.observe(
+            self.on.fiveg_nrf_relation_joined, self._on_fiveg_nrf_relation_joined
+        )
+        self.framework.observe(
+            self.on.certificates_relation_created, self._on_certificates_relation_created
+        )
+        self.framework.observe(
+            self.on.certificates_relation_joined, self._on_certificates_relation_joined
+        )
+        self.framework.observe(
+            self.on.certificates_relation_broken, self._on_certificates_relation_broken
+        )
+        self.framework.observe(
+            self._certificates.on.certificate_available, self._on_certificate_available
+        )
+        self.framework.observe(
+            self._certificates.on.certificate_expiring, self._on_certificate_expiring
         )
 
     def _configure_nrf(self, event: EventBase) -> None:
@@ -125,8 +155,145 @@ class NRFOperatorCharm(CharmBase):
             return
         needs_restart = self._generate_config_file()
         self._configure_workload(restart=needs_restart)
-        self._publish_nrf_info_for_all_requirers(NRF_URL)
+        self._publish_nrf_info_for_all_requirers()
         self.unit.status = ActiveStatus()
+
+    def _on_certificates_relation_created(self, event):
+        """Generates Private key."""
+        if not self.unit.is_leader():
+            return
+        if not self._container.can_connect():
+            event.defer()
+            return
+        self._generate_private_key()
+
+    def _on_certificates_relation_broken(self, event):
+        """Deletes TLS related artifacts and reconfigures workload."""
+        if not self.unit.is_leader():
+            return
+        if not self._container.can_connect():
+            event.defer()
+            return
+        self._delete_private_key()
+        self._delete_csr()
+        self._delete_certificate()
+        self._configure_nrf(event)
+
+    def _on_certificates_relation_joined(self, event):
+        """Generates CSR and requests new certificate."""
+        if not self.unit.is_leader():
+            return
+        if not self._container.can_connect():
+            event.defer()
+            return
+        if not self._private_key_is_stored():
+            event.defer()
+            return
+        self._request_new_certificate()
+
+    def _on_certificate_available(self, event: CertificateAvailableEvent):
+        """Pushes certificate to workload and configures workload."""
+        if not self.unit.is_leader():
+            return
+        if not self._container.can_connect():
+            event.defer()
+            return
+        if not self._csr_is_stored():
+            logger.warning("Certificate is available but no CSR is stored")
+            return
+        if event.certificate_signing_request != self._get_stored_csr():
+            logger.debug("Stored CSR doesn't match one in certificate available event")
+            return
+        self._store_certificate(event.certificate)
+        self._configure_nrf(event)
+
+    def _on_certificate_expiring(self, event: CertificateExpiringEvent):
+        """Requests new certificate."""
+        if not self.unit.is_leader():
+            return
+        if not self._container.can_connect():
+            event.defer()
+            return
+        if event.certificate != self._get_stored_certificate():
+            logger.debug("Expiring certificate is not the one stored")
+            return
+        self._request_new_certificate()
+
+    def _generate_private_key(self) -> None:
+        """Generates and stores private key."""
+        private_key = generate_private_key()
+        self._store_private_key(private_key.decode())
+
+    def _request_new_certificate(self):
+        """Generates and stores CSR."""
+        private_key = self._get_stored_private_key()
+        csr = generate_csr(
+            private_key=private_key.encode(),
+            subject=CERTIFICATE_COMMON_NAME,
+            sans_dns=[CERTIFICATE_COMMON_NAME],
+        )
+        self._store_csr(csr.decode().strip())
+        self._certificates.request_certificate_creation(certificate_signing_request=csr)
+
+    def _delete_private_key(self):
+        """Removes private key from workload."""
+        if not self._private_key_is_stored():
+            return
+        self._container.remove_path(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}")
+        logger.info("Removed private key from workload")
+
+    def _delete_csr(self):
+        """Deletes CSR from workload."""
+        if not self._csr_is_stored():
+            return
+        self._container.remove_path(path=f"{CERTS_DIR_PATH}/{CSR_NAME}")
+        logger.info("Removed CSR from workload")
+
+    def _delete_certificate(self):
+        """Deletes certificate from workload."""
+        if not self._certificate_is_stored():
+            return
+        self._container.remove_path(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}")
+        logger.info("Removed certificate from workload")
+
+    def _private_key_is_stored(self) -> bool:
+        """Returns whether private key is stored in workload."""
+        return self._container.exists(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}")
+
+    def _csr_is_stored(self) -> bool:
+        """Returns whether CSR is stored in workload."""
+        return self._container.exists(path=f"{CERTS_DIR_PATH}/{CSR_NAME}")
+
+    def _get_stored_certificate(self) -> str:
+        """Returns stored certificate."""
+        return str(self._container.pull(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}").read())
+
+    def _get_stored_csr(self) -> str:
+        """Returns stored CSR."""
+        return str(self._container.pull(path=f"{CERTS_DIR_PATH}/{CSR_NAME}").read())
+
+    def _get_stored_private_key(self) -> str:
+        """Returns stored private key."""
+        return str(self._container.pull(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}").read())
+
+    def _certificate_is_stored(self) -> bool:
+        """Returns whether certificate is stored in workload."""
+        return self._container.exists(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}")
+
+    def _store_certificate(self, certificate: str):
+        """Stores certificate in workload."""
+        self._container.push(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}", source=certificate)
+        logger.info("Pushed certificate pushed to workload")
+
+    def _store_private_key(self, private_key: str):
+        """Stores private key in workload."""
+        self._container.push(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}", source=private_key)
+        logger.info("Pushed private key to workload")
+
+    def _store_csr(self, csr: str):
+        """Stores CSR in workload."""
+        self._container.push(path=f"{CERTS_DIR_PATH}/{CSR_NAME}", source=csr)
+        logger.info("Pushed CSR to workload")
 
     def _generate_config_file(self) -> bool:
         """Handles creation of the NRF config file.
@@ -144,6 +311,7 @@ class NRFOperatorCharm(CharmBase):
             nrf_ip=_get_pod_ip(),  # type: ignore[arg-type]
             database_name=DATABASE_NAME,
             nrf_sbi_port=NRF_SBI_PORT,
+            scheme="https" if self._certificate_is_stored() else "http",
         )
         if not self._config_file_content_matches(content=content):
             self._push_config_file(
@@ -183,22 +351,20 @@ class NRFOperatorCharm(CharmBase):
             return
         if not self._nrf_service_is_running():
             return
+        nrf_url = self._get_nrf_url()
         self.nrf_provider.set_nrf_information(
-            url=NRF_URL,
+            url=nrf_url,
             relation_id=event.relation.id,
         )
 
-    def _publish_nrf_info_for_all_requirers(self, url: str) -> None:
-        """Publish nrf information in the databags of all relations requiring it.
-
-        Args:
-            url: URL of the NRF service
-        """
+    def _publish_nrf_info_for_all_requirers(self) -> None:
+        """Publish nrf information in the databags of all relations requiring it."""
         if not self.unit.is_leader():
             return
         if not self._relation_created(NRF_RELATION_NAME):
             return
-        self.nrf_provider.set_nrf_information_in_all_relations(url)
+        nrf_url = self._get_nrf_url()
+        self.nrf_provider.set_nrf_information_in_all_relations(nrf_url)
 
     def _relation_created(self, relation_name: str) -> bool:
         """Returns whether a given Juju relation was crated.
@@ -301,6 +467,11 @@ class NRFOperatorCharm(CharmBase):
         except ModelError:
             return False
         return service.is_running()
+
+    def _get_nrf_url(self) -> str:
+        """Returns NRF URL."""
+        scheme = "https" if self._certificate_is_stored() else "http"
+        return f"{scheme}://nrf:{NRF_SBI_PORT}"
 
 
 if __name__ == "__main__":

@@ -9,6 +9,8 @@ containers:
     mounts:
       - storage: config
         location: /etc/nrf/
+      - storage: certs
+        location: /free5gc/support/TLS
 
 resources:
   nrf-image:
@@ -20,10 +22,15 @@ storage:
   config:
     type: filesystem
     minimum-size: 1M
+  certs:
+    type: filesystem
+    minimum-size: 1M
 
 requires:
   database:
     interface: mongodb_client
+  certificates:
+    interface: tls-certificates
 
 provides:  
   fiveg-nrf:
