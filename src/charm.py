@@ -280,7 +280,7 @@ class NRFOperatorCharm(CharmBase):
         """Returns whether certificate is stored in workload."""
         return self._container.exists(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}")
 
-    def _store_certificate(self, certificate: str):
+    def _store_certificate(self, certificate: str) -> None:
         """Stores certificate in workload."""
         self._container.push(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}", source=certificate)
         logger.info("Pushed certificate pushed to workload")
