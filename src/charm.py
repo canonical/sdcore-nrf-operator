@@ -285,7 +285,7 @@ class NRFOperatorCharm(CharmBase):
         self._container.push(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}", source=certificate)
         logger.info("Pushed certificate pushed to workload")
 
-    def _store_private_key(self, private_key: str):
+    def _store_private_key(self, private_key: str) -> None:
         """Stores private key in workload."""
         self._container.push(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}", source=private_key)
         logger.info("Pushed private key to workload")
