@@ -191,7 +191,7 @@ class NRFOperatorCharm(CharmBase):
             return
         self._request_new_certificate()
 
-    def _on_certificate_available(self, event: CertificateAvailableEvent):
+    def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
         """Pushes certificate to workload and configures workload."""
         if not self.unit.is_leader():
             return
