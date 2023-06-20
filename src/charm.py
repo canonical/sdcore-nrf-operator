@@ -167,7 +167,7 @@ class NRFOperatorCharm(CharmBase):
             return
         self._generate_private_key()
 
-    def _on_certificates_relation_broken(self, event):
+    def _on_certificates_relation_broken(self, EventBase) -> None:
         """Deletes TLS related artifacts and reconfigures workload."""
         if not self.unit.is_leader():
             return
