@@ -67,6 +67,7 @@ def _render_config(
         database_url: URL of the database
         nrf_ip: IP of the NRF service
         nrf_sbi_port: Port of the NRF service
+        scheme: SBI interface scheme ("http" or "https")
 
     Returns:
         str: Rendered config file content
