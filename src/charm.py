@@ -179,7 +179,7 @@ class NRFOperatorCharm(CharmBase):
         self._delete_certificate()
         self._configure_nrf(event)
 
-    def _on_certificates_relation_joined(self, event):
+    def _on_certificates_relation_joined(self, EventBase) -> None:
         """Generates CSR and requests new certificate."""
         if not self.unit.is_leader():
             return
