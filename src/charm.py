@@ -158,7 +158,7 @@ class NRFOperatorCharm(CharmBase):
         self._publish_nrf_info_for_all_requirers()
         self.unit.status = ActiveStatus()
 
-    def _on_certificates_relation_created(self, event):
+    def _on_certificates_relation_created(self, EventBase) -> None:
         """Generates Private key."""
         if not self.unit.is_leader():
             return
