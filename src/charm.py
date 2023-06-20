@@ -90,6 +90,8 @@ class NRFOperatorCharm(CharmBase):
     def __init__(self, *args):
         """Initialize charm."""
         super().__init__(*args)
+        if not self.unit.is_leader():
+            raise NotImplementedError("Scaling is not implemented for this charm")
         self._container_name = self._service_name = "nrf"
         self._container = self.unit.get_container(self._container_name)
         self._database = DatabaseRequires(
@@ -161,8 +163,6 @@ class NRFOperatorCharm(CharmBase):
 
     def _on_certificates_relation_created(self, event: EventBase) -> None:
         """Generates Private key."""
-        if not self.unit.is_leader():
-            return
         if not self._container.can_connect():
             event.defer()
             return
@@ -170,8 +170,6 @@ class NRFOperatorCharm(CharmBase):
 
     def _on_certificates_relation_broken(self, event: EventBase) -> None:
         """Deletes TLS related artifacts and reconfigures workload."""
-        if not self.unit.is_leader():
-            return
         if not self._container.can_connect():
             event.defer()
             return
@@ -182,8 +180,6 @@ class NRFOperatorCharm(CharmBase):
 
     def _on_certificates_relation_joined(self, event: EventBase) -> None:
         """Generates CSR and requests new certificate."""
-        if not self.unit.is_leader():
-            return
         if not self._container.can_connect():
             event.defer()
             return
@@ -194,8 +190,6 @@ class NRFOperatorCharm(CharmBase):
 
     def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
         """Pushes certificate to workload and configures workload."""
-        if not self.unit.is_leader():
-            return
         if not self._container.can_connect():
             event.defer()
             return
@@ -210,8 +204,6 @@ class NRFOperatorCharm(CharmBase):
 
     def _on_certificate_expiring(self, event: CertificateExpiringEvent) -> None:
         """Requests new certificate."""
-        if not self.unit.is_leader():
-            return
         if not self._container.can_connect():
             event.defer()
             return
@@ -348,8 +340,6 @@ class NRFOperatorCharm(CharmBase):
         Args:
             event: RelationJoinedEvent
         """
-        if not self.unit.is_leader():
-            return
         if not self._nrf_service_is_running():
             return
         nrf_url = self._get_nrf_url()
@@ -360,8 +350,6 @@ class NRFOperatorCharm(CharmBase):
 
     def _publish_nrf_info_for_all_requirers(self) -> None:
         """Publish nrf information in the databags of all relations requiring it."""
-        if not self.unit.is_leader():
-            return
         if not self._relation_created(NRF_RELATION_NAME):
             return
         nrf_url = self._get_nrf_url()

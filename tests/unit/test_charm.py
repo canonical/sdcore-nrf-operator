@@ -23,6 +23,7 @@ class TestCharm(unittest.TestCase):
     def setUp(self):
         self.harness = testing.Harness(NRFOperatorCharm)
         self.addCleanup(self.harness.cleanup)
+        self.harness.set_leader(is_leader=True)
         self.harness.begin()
 
     def _create_database_relation(self) -> int:
@@ -246,50 +247,6 @@ class TestCharm(unittest.TestCase):
             WaitingStatus("Waiting for pod IP address to be available"),
         )
 
-    def test_given_service_is_not_running_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
-        self,
-    ):
-        self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
-        relation_id = self.harness.add_relation(
-            relation_name="fiveg-nrf",
-            remote_app="nrf-requirer",
-        )
-        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
-        )
-        self.assertEqual(relation_data, {})
-
-    @patch("ops.model.Container.push", new=Mock)
-    @patch("ops.model.Container.pull")
-    @patch("ops.model.Container.exists")
-    @patch("charm.check_output")
-    def test_given_unit_is_not_leader_when_fiveg_nrf_relation_joined_then_nrf_url_is_not_in_relation_databag(  # noqa: E501
-        self, patch_check_output, patch_exists, patch_pull
-    ):
-        patch_check_output.return_value = b"1.1.1.1"
-        patch_exists.return_value = True
-        patch_pull.return_value = StringIO(
-            self._read_file("tests/unit/expected_config/config.conf").strip()
-        )
-
-        self._database_is_available()
-
-        self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=False)
-        self.harness.container_pebble_ready("nrf")
-
-        relation_id = self.harness.add_relation(
-            relation_name="fiveg-nrf",
-            remote_app="nrf-requirer",
-        )
-        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="nrf-requirer/0")
-        relation_data = self.harness.get_relation_data(
-            relation_id=relation_id, app_or_unit=self.harness.charm.app.name
-        )
-        self.assertEqual(relation_data, {})
-
     @patch("ops.model.Container.push", new=Mock)
     @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
@@ -306,7 +263,6 @@ class TestCharm(unittest.TestCase):
         self._database_is_available()
 
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
         self.harness.container_pebble_ready("nrf")
 
         relation_id = self.harness.add_relation(
@@ -335,7 +291,6 @@ class TestCharm(unittest.TestCase):
         self._database_is_available()
 
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
         self.harness.container_pebble_ready("nrf")
 
         relation_id = self.harness.add_relation(
@@ -363,8 +318,6 @@ class TestCharm(unittest.TestCase):
         ]
 
         self.harness.set_can_connect(container="nrf", val=False)
-
-        self.harness.set_leader(is_leader=True)
 
         relation_1_id = self.harness.add_relation(
             relation_name="fiveg-nrf",
@@ -402,7 +355,6 @@ class TestCharm(unittest.TestCase):
     ):
         private_key = b"whatever key content"
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
         patch_generate_private_key.return_value = private_key
 
         self.harness.charm._on_certificates_relation_created(event=Mock)
@@ -418,7 +370,6 @@ class TestCharm(unittest.TestCase):
     ):
         patch_exists.return_value = True
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificates_relation_broken(event=Mock)
 
@@ -442,7 +393,6 @@ class TestCharm(unittest.TestCase):
         patch_pull.return_value = StringIO("private key content")
         patch_exists.return_value = True
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificates_relation_joined(event=Mock)
 
@@ -467,7 +417,6 @@ class TestCharm(unittest.TestCase):
         patch_pull.return_value = StringIO("private key content")
         patch_exists.return_value = True
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificates_relation_joined(event=Mock)
 
@@ -490,7 +439,6 @@ class TestCharm(unittest.TestCase):
         event.certificate = certificate
         event.certificate_signing_request = csr
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificate_available(event=event)
 
@@ -512,7 +460,6 @@ class TestCharm(unittest.TestCase):
         event.certificate = certificate
         event.certificate_signing_request = "Relation CSR content (different from stored one)"
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificate_available(event=event)
 
@@ -533,7 +480,6 @@ class TestCharm(unittest.TestCase):
         csr = b"whatever csr content"
         patch_generate_csr.return_value = csr
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificate_expiring(event=event)
 
@@ -555,7 +501,6 @@ class TestCharm(unittest.TestCase):
         csr = b"whatever csr content"
         patch_generate_csr.return_value = csr
         self.harness.set_can_connect(container="nrf", val=True)
-        self.harness.set_leader(is_leader=True)
 
         self.harness.charm._on_certificate_expiring(event=event)
 
