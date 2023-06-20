@@ -215,17 +215,17 @@ class NRFOperatorCharm(CharmBase):
     def _generate_private_key(self) -> None:
         """Generates and stores private key."""
         private_key = generate_private_key()
-        self._store_private_key(private_key.decode())
+        self._store_private_key(private_key)
 
     def _request_new_certificate(self) -> None:
         """Generates and stores CSR, and uses to request new certificate."""
         private_key = self._get_stored_private_key()
         csr = generate_csr(
-            private_key=private_key.encode(),
+            private_key=private_key,
             subject=CERTIFICATE_COMMON_NAME,
             sans_dns=[CERTIFICATE_COMMON_NAME],
         )
-        self._store_csr(csr.decode().strip())
+        self._store_csr(csr)
         self._certificates.request_certificate_creation(certificate_signing_request=csr)
 
     def _delete_private_key(self):
@@ -265,9 +265,11 @@ class NRFOperatorCharm(CharmBase):
         """Returns stored CSR."""
         return str(self._container.pull(path=f"{CERTS_DIR_PATH}/{CSR_NAME}").read())
 
-    def _get_stored_private_key(self) -> str:
+    def _get_stored_private_key(self) -> bytes:
         """Returns stored private key."""
-        return str(self._container.pull(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}").read())
+        return str(
+            self._container.pull(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}").read()
+        ).encode()
 
     def _certificate_is_stored(self) -> bool:
         """Returns whether certificate is stored in workload."""
@@ -278,14 +280,17 @@ class NRFOperatorCharm(CharmBase):
         self._container.push(path=f"{CERTS_DIR_PATH}/{CERTIFICATE_NAME}", source=certificate)
         logger.info("Pushed certificate pushed to workload")
 
-    def _store_private_key(self, private_key: str) -> None:
+    def _store_private_key(self, private_key: bytes) -> None:
         """Stores private key in workload."""
-        self._container.push(path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}", source=private_key)
+        self._container.push(
+            path=f"{CERTS_DIR_PATH}/{PRIVATE_KEY_NAME}",
+            source=private_key.decode(),
+        )
         logger.info("Pushed private key to workload")
 
-    def _store_csr(self, csr: str) -> None:
+    def _store_csr(self, csr: bytes) -> None:
         """Stores CSR in workload."""
-        self._container.push(path=f"{CERTS_DIR_PATH}/{CSR_NAME}", source=csr)
+        self._container.push(path=f"{CERTS_DIR_PATH}/{CSR_NAME}", source=csr.decode().strip())
         logger.info("Pushed CSR to workload")
 
     def _generate_config_file(self) -> bool:
