@@ -1,4 +1,4 @@
-tests/unit/test_charm.py# Copyright 2023 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import unittest
