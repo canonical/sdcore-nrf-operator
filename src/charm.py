@@ -225,7 +225,7 @@ class NRFOperatorCharm(CharmBase):
         self._store_private_key(private_key.decode())
 
     def _request_new_certificate(self):
-        """Generates and stores CSR."""
+        """Generates and stores CSR, and uses to request new certificate."""
         private_key = self._get_stored_private_key()
         csr = generate_csr(
             private_key=private_key.encode(),
