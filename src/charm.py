@@ -207,7 +207,7 @@ class NRFOperatorCharm(CharmBase):
         self._store_certificate(event.certificate)
         self._configure_nrf(event)
 
-    def _on_certificate_expiring(self, event: CertificateExpiringEvent):
+    def _on_certificate_expiring(self, event: CertificateExpiringEvent) -> None:
         """Requests new certificate."""
         if not self.unit.is_leader():
             return
