@@ -359,9 +359,7 @@ class TestCharm(unittest.TestCase):
 
         self.harness.charm._on_certificates_relation_created(event=Mock)
 
-        patch_push.assert_called_with(
-            path="/free5gc/support/TLS/nrf.key", source=private_key.decode()
-        )
+        patch_push.assert_called_with(path="/support/TLS/nrf.key", source=private_key.decode())
 
     @patch("ops.model.Container.remove_path")
     @patch("ops.model.Container.exists")
@@ -373,9 +371,9 @@ class TestCharm(unittest.TestCase):
 
         self.harness.charm._on_certificates_relation_broken(event=Mock)
 
-        patch_remove_path.assert_any_call(path="/free5gc/support/TLS/nrf.pem")
-        patch_remove_path.assert_any_call(path="/free5gc/support/TLS/nrf.key")
-        patch_remove_path.assert_any_call(path="/free5gc/support/TLS/nrf.csr")
+        patch_remove_path.assert_any_call(path="/support/TLS/nrf.pem")
+        patch_remove_path.assert_any_call(path="/support/TLS/nrf.key")
+        patch_remove_path.assert_any_call(path="/support/TLS/nrf.csr")
 
     @patch(
         "charms.tls_certificates_interface.v2.tls_certificates.TLSCertificatesRequiresV2.request_certificate_creation",  # noqa: E501
@@ -396,7 +394,7 @@ class TestCharm(unittest.TestCase):
 
         self.harness.charm._on_certificates_relation_joined(event=Mock)
 
-        patch_push.assert_called_with(path="/free5gc/support/TLS/nrf.csr", source=csr.decode())
+        patch_push.assert_called_with(path="/support/TLS/nrf.csr", source=csr.decode())
 
     @patch(
         "charms.tls_certificates_interface.v2.tls_certificates.TLSCertificatesRequiresV2.request_certificate_creation",  # noqa: E501
@@ -442,7 +440,7 @@ class TestCharm(unittest.TestCase):
 
         self.harness.charm._on_certificate_available(event=event)
 
-        patch_push.assert_called_with(path="/free5gc/support/TLS/nrf.pem", source=certificate)
+        patch_push.assert_called_with(path="/support/TLS/nrf.pem", source=certificate)
 
     @patch("ops.model.Container.pull")
     @patch("ops.model.Container.exists")
