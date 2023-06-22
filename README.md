@@ -31,4 +31,4 @@ juju integrate self-signed-certificates:certificates sdcore-nrf:certificates
 
 # Image
 
-- **nrf**: `omecproject/5gc-nrf:master-b747b98`
+- **nrf**: `ghcr.io/canonical/sdcore-nrf:1.3`

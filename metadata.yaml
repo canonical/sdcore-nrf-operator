@@ -16,7 +16,7 @@ resources:
   nrf-image:
     type: oci-image
     description: OCI image for SD-Core nrf
-    upstream-source: omecproject/5gc-nrf:master-b747b98
+    upstream-source: ghcr.io/canonical/sdcore-nrf:1.3
 
 storage:
   config:

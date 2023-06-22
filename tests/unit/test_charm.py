@@ -179,7 +179,7 @@ class TestCharm(unittest.TestCase):
             "services": {
                 "nrf": {
                     "override": "replace",
-                    "command": "/free5gc/nrf/nrf --nrfcfg /etc/nrf/nrfcfg.yaml",
+                    "command": "/bin/nrf --nrfcfg /etc/nrf/nrfcfg.yaml",
                     "startup": "enabled",
                     "environment": {
                         "GRPC_GO_LOG_VERBOSITY_LEVEL": "99",
