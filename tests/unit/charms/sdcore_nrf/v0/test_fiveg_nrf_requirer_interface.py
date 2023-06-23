@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-import logging
+
 import unittest
 from unittest.mock import call, patch
 
