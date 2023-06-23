@@ -22,6 +22,13 @@ juju deploy mongodb-k8s --trust --channel=5/edge
 juju integrate sdcore-nrf:database mongodb-k8s
 ```
 
+## Optional
+
+```bash
+juju deploy self-signed-certificates
+juju integrate self-signed-certificates:certificates sdcore-nrf:certificates
+```
+
 # Image
 
-- **nrf**: `omecproject/5gc-nrf:master-b747b98`
+- **nrf**: `ghcr.io/canonical/sdcore-nrf:1.3`

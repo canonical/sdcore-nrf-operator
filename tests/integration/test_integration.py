@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 DB_APPLICATION_NAME = "mongodb"
+TLS_APPLICATION_NAME = "self-signed-certificates"
 
 
 @pytest.fixture(scope="module")
@@ -21,6 +22,16 @@ DB_APPLICATION_NAME = "mongodb"
 async def deploy_mongodb(ops_test):
     await ops_test.model.deploy(
         "mongodb-k8s", application_name=DB_APPLICATION_NAME, channel="5/edge", trust=True
+    )
+
+
+@pytest.fixture(scope="module")
+@pytest.mark.abort_on_fail
+async def deploy_self_signed_certificates(ops_test):
+    await ops_test.model.deploy(
+        TLS_APPLICATION_NAME,
+        application_name=TLS_APPLICATION_NAME,
+        channel="edge",
     )
 
 
@@ -43,7 +54,7 @@ async def build_and_deploy(ops_test):
 
 @pytest.mark.abort_on_fail
 async def test_given_charm_is_built_when_deployed_then_status_is_blocked(
-    ops_test, build_and_deploy, deploy_mongodb
+    ops_test, build_and_deploy, deploy_mongodb, deploy_self_signed_certificates
 ):
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME],
@@ -52,10 +63,13 @@ async def test_given_charm_is_built_when_deployed_then_status_is_blocked(
     )
 
 
-async def test_given_charm_is_deployed_when_relate_to_mongo_then_status_is_active(
+async def test_given_charm_is_deployed_when_relate_to_mongo_and_certificates_then_status_is_active(
     ops_test, build_and_deploy
 ):
     await ops_test.model.add_relation(
         relation1=f"{APP_NAME}:database", relation2=f"{DB_APPLICATION_NAME}:database"
+    )
+    await ops_test.model.add_relation(
+        relation1=f"{APP_NAME}:certificates", relation2=f"{TLS_APPLICATION_NAME}:certificates"
     )
     await ops_test.model.wait_for_idle(apps=[APP_NAME], status="active", timeout=1000)
