@@ -10,7 +10,7 @@ containers:
       - storage: config
         location: /etc/nrf/
       - storage: certs
-        location: /free5gc/support/TLS
+        location: /support/TLS
 
 resources:
   nrf-image:
