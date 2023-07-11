@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from ops import testing
 
@@ -16,7 +16,7 @@ DUMMY_REQUIRER_CHARM = "tests.unit.charms.sdcore_nrf.v0.dummy_requirer_charm.src
 class TestFiveGNRFRequirer(unittest.TestCase):
     def setUp(self):
         self.relation_name = "fiveg-nrf"
-        self.remote_app_name = "dummy-nrf-requirer"
+        self.remote_app_name = "dummy-nrf-provider"
         self.remote_unit_name = f"{self.remote_app_name}/0"
         self.harness = testing.Harness(DummyFiveGNRFRequirerCharm)
         self.addCleanup(self.harness.cleanup)
@@ -136,3 +136,14 @@ class TestFiveGNRFRequirer(unittest.TestCase):
                 f"DEBUG:lib.charms.sdcore_nrf.v0.fiveg_nrf:Invalid relation data: {relation_data}",
                 log.output,
             )
+
+    @patch("lib.charms.sdcore_nrf.v0.fiveg_nrf.NRFRequirerCharmEvents.nrf_broken")
+    def test_given_nrf_relation_created_when_relation_broken_then_nrf_broken_event_emitted(
+        self, patched_nrf_broken_event
+    ):
+        relation_id = self._create_relation(remote_app_name=self.remote_app_name)
+
+        self.harness.remove_relation(relation_id)
+
+        calls = [call.emit()]
+        patched_nrf_broken_event.assert_has_calls(calls)
